@@ -1,89 +1,215 @@
 :root {
-  --fp-primary: #0d6efd;
-  --fp-dark: #1f2937;
-  --fp-light: #f3f4f6;
-  --fp-border: #e5e7eb;
+  --fp-primary: #0064CD; /* Azul Fixsy */
+  --fp-dark: #2C2A2B;    /* Gris oscuro Fixsy */
+  --fp-light: #F2F1F2;   /* Gris claro Fixsy */
+  --fp-border: #E5E7EB;
+  --fp-accent: #FF6D00;  /* Naranja Fixsy */
+  /* Tamaños de marca controlables */
+  --brand-title-size-desktop: 1.75rem; /* tamaño del texto 'Fixsy Parts' en desktop */
+  --brand-title-size-mobile: 1.375rem; /* tamaño del título en móvil */
+  --brand-logo-scale: 2.5;            /* relación logo:título (2.5 = logo 2.5x) */
+  --brand-gap-desktop: 16px;          /* separación logo-texto en desktop */
+  --brand-gap-mobile: 12px;           /* separación logo-texto en móvil */
 }
 
 .navbar {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  background: #ffffff;
-  border-bottom: 1px solid var(--fp-border);
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  background: var(--fp-primary);
+  color: #fff;
+  padding: 1rem 1.25rem 1.25rem 1.25rem;
+  margin: 0;
+  border: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
 .navbar__top {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 720px) 1fr;
   align-items: center;
-  justify-content: space-between;
+  column-gap: 1.5rem;
+  min-height: 72px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .navbar__brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 10px; /* separación base entre logo y texto dentro del contenedor */
+  cursor: pointer;
+  user-select: none;
+  justify-self: start;
+  /*
+    Ajuste fino de posición del bloque logo + texto.
+    - Puedes moverlo con margin-left o padding-left para equilibrar
+      respecto a los iconos de la derecha.
+    - La fila usa display: grid en el contenedor; dentro del brand
+      usamos display: flex para alinear logo/título:
+        display: flex; justify-content: flex-start; align-items: center;
+    - Para desplazar más a la izquierda, ajusta:
+        margin-left: -8px;  (valores negativos desplazan hacia el borde)
+      O bien:
+        padding-left: 0;    (si prefieres empuje interno sin valores negativos)
+  */
+  margin-left: -12px;
+}
+
+/* Contenedor del logo + texto */
+.logo-container {
+  display: flex;          /* Alinea horizontalmente */
+  align-items: center;    /* Centra verticalmente */
+  gap: var(--brand-gap-desktop); /* Ajusta separación entre logo y texto */
+}
+
+/* Imagen del logo: ajusta ancho para cambiar tamaño visual */
+.logo-image {
+  /* Tamaño del logo controlado por variables */
+  height: calc(var(--brand-title-size-desktop) * var(--brand-logo-scale));
+  width: auto;
+  display: block;
+}
+
+/* Texto de marca: Montserrat 700, color blanco */
+.logo-text {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
 }
 
 .navbar__logo {
-  width: 36px;
-  height: 36px;
+  width: 60px;
+  height: 60px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
-  background: var(--fp-dark);
-  color: #fff;
-  font-weight: 700;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--fp-primary);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
 }
 
 .navbar__title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--fp-dark);
+  font-size: var(--brand-title-size-desktop);
+  font-weight: 700; /* Título Montserrat */
+  color: #fff;
+  letter-spacing: 0.2px;
 }
 
 .navbar__actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  justify-self: end;
 }
 
 .icon-button {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--fp-border);
-  border-radius: 6px;
+  border: 1px solid var(--fp-light);
+  border-radius: 12px;
   background: #fff;
+  color: var(--fp-dark);
   cursor: pointer;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  transition: transform 0.06s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.icon-button:hover { background: var(--fp-light); }
+.icon-button:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.12); filter: brightness(0.98); }
+.icon-button:active { transform: translateY(1px); }
+
+.icon {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  fill: none;
+}
 
 .navbar__search {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  width: 100%;
+  justify-self: center;
 }
 
 .navbar__search input[type="search"] {
   flex: 1;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--fp-border);
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--fp-light);
+  border-radius: 12px;
   outline: none;
+  background: #fff;
+  color: var(--fp-dark);
+  font-size: 1rem;
 }
 
+.navbar__search input::placeholder { color: #8F8F8F; }
+
 .search-button {
-  padding: 0 0.75rem;
-  border: 1px solid var(--fp-border);
-  border-radius: 6px;
+  height: 48px;
+  padding: 0 0.9rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--fp-light);
+  border-radius: 12px;
   background: #fff;
+  color: var(--fp-primary);
   cursor: pointer;
 }
 
-.search-button:hover { background: var(--fp-light); }
+.search-button:hover { filter: brightness(0.98); }
+.search-button .icon { width: 22px; height: 22px; }
+
+/* Cart badge */
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--fp-accent);
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
 
 .app-main { padding: 1rem; }
 
+@media (max-width: 640px) {
+  .navbar { padding: 0.75rem 1rem 1rem 1rem; }
+  .navbar__title { font-size: var(--brand-title-size-mobile); }
+  .navbar__logo { width: 46px; height: 46px; }
+  .icon-button { width: 48px; height: 48px; }
+  .icon { width: 24px; height: 24px; }
+  .navbar__search { padding-top: 0; max-width: 100%; }
+  /* En móvil, ajuste más sutil para evitar desbordes laterales */
+  .navbar__brand { margin-left: -4px; }
+  .search-button { height: 44px; }
+  /* Mantener relación en móvil */
+  .logo-image { height: calc(var(--brand-title-size-mobile) * var(--brand-logo-scale)); }
+  .logo-container { gap: var(--brand-gap-mobile); }
+}
+
+/* Botón de perfil en naranja corporativo */
+.profile-button {
+  background: var(--fp-accent);
+  color: #fff;
+  border-color: transparent;
+}
+.profile-button:hover { filter: brightness(0.98); }

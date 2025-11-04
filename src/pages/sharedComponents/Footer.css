@@ -1,0 +1,62 @@
+:root {
+  --fp-primary: #0064CD;
+  --fp-dark: #2C2A2B;
+  --fp-light: #F2F1F2;
+  --fp-border: #E5E7EB;
+}
+
+.footer {
+  background: var(--fp-dark); /* Gris/negro corporativo completo */
+  color: #fff;                /* Texto blanco que resalta */
+  width: 100%;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 -1px 0 rgba(0,0,0,0.25);
+  position: relative;
+  z-index: 10; /* aseguran clics por encima de overlays */
+}
+
+.footer__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem; /* Más cómodo (15–25px aprox) */
+  text-align: center;
+}
+
+.footer__legal,
+.footer__contact {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* Hacer que el texto "se remarque" mejor sobre fondo oscuro */
+.footer__legal p { font-weight: 700; text-shadow: 0 1px 1px rgba(0,0,0,0.35); font-size: 1rem; }
+
+.footer__links {
+  display: inline-flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer__links a {
+  color: #fff; /* Enlaces blancos sobre gris oscuro */
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  transition: background 0.2s ease, color 0.2s ease, text-decoration-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+  cursor: pointer; /* que se vean como botones */
+  font-weight: 600;
+  font-size: 1rem;
+  display: inline-block; /* mayor área clickeable */
+}
+
+.footer__links a:hover {
+  background: rgba(255,255,255,0.12);
+  text-decoration: underline; /* subrayado en hover */
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .footer__inner { padding: 1rem; }
+  .footer__links { gap: 0.75rem; }
+}

@@ -1,0 +1,7 @@
+.checkout { padding: 1rem; }
+.checkout-placeholder { margin-top: .75rem; padding: .75rem; border: 1px dashed #0064CD; border-radius: 8px; background: #fff; }
+.checkout-list { margin: .5rem 0; display: grid; gap: .25rem; }
+.checkout-item { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; align-items: center; }
+.co-name { color: #2C2A2B; }
+.co-qty { color: #2C2A2B; }
+.co-price { color: #0064CD; font-weight: 700; }

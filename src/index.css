@@ -1,0 +1,36 @@
+/* Fuente global Montserrat (si está instalada en el sistema) */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400; /* Texto general */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #ffffff;
+}
+
+h1, h2, h3 {
+  font-weight: 700; /* Títulos */
+}
+
+h4, h5, h6 {
+  font-weight: 600; /* Subtítulos */
+}
+
+p, span, li, input, button, label {
+  font-weight: 400; /* Texto general */
+}
+
+/* Layout para mantener el footer al final */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+}
