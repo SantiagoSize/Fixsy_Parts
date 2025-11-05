@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Product } from '../data/products';
+import { toast } from '../hooks/useToast';
 
 export type CartItem = {
   product: Product;
@@ -28,7 +29,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const current = prev[idx];
         const nextQty = current.quantity + quantity;
         if (nextQty > product.stock) {
-          alert('No hay stock disponible para este producto');
+          toast('No hay stock disponible para este producto');
           return prev; // no cambiar
         }
         const copy = [...prev];
@@ -36,7 +37,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return copy;
       }
       if (quantity > product.stock) {
-        alert('No hay stock disponible para este producto');
+        toast('No hay stock disponible para este producto');
         return prev; // no agregar si supera stock
       }
       return [...prev, { product, quantity }];

@@ -1,0 +1,48 @@
+/* Modal visual cleanup and animation */
+.modal-card.animated-in {
+  animation: modalFadeIn 200ms ease both;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-cancel {
+  background: #2C2A2B;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-save {
+  background: #26AB4E;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.field-error {
+  color: #D32F2F;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Evitar cambios de tamaño del textarea dentro del modal */
+.modal-card textarea {
+  resize: none;
+  overflow-y: auto;
+  max-height: 140px;
+}

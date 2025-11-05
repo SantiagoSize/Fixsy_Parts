@@ -2,11 +2,19 @@ import './NavBar.css';
 import logo from '../../assets/SoloLogoF_White.png';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import React from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useMessages } from '../../context/MessagesContext';
 
 function NavBar() {
   const { items } = useCart();
   const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
+  const { unreadCount } = useMessages();
+  const [openMenu, setOpenMenu] = React.useState(false);
   const count = items.reduce((sum, it) => sum + it.quantity, 0);
+  const unread = user ? unreadCount(user.email) : 0;
+  const unreadText = unread > 99 ? '99+' : unread > 0 ? String(unread) : '';
 
   return (
     <header className="navbar">
@@ -66,16 +74,70 @@ function NavBar() {
               </span>
             )}
           </button>
-          <button
-            className="icon-button profile-button"
-            aria-label="Cuenta"
-            onClick={() => navigate('/account')}
-          >
-            <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="4" fill="none" />
-              <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              className="icon-button profile-button"
+              aria-label="Cuenta"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  navigate('/login');
+                } else {
+                  setOpenMenu(v => !v);
+                }
+              }}
+            >
+              <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" fill="none" />
+                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {!!unread && (
+              <span className="profile-msg-badge" aria-label={`${unread} mensajes no leídos`}>{unreadText}</span>
+            )}
+            {isAuthenticated && openMenu && (
+              <div
+                role="menu"
+                style={{
+                  position: 'absolute', top: '110%', right: 0,
+                  background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 160,
+                }}
+              >
+                <button
+                  onClick={() => { setOpenMenu(false); navigate('/profile'); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                >
+                  Ver perfil
+                </button>
+                <button
+                  onClick={() => { setOpenMenu(false); navigate('/inbox'); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                >
+                  Bandeja de mensajes
+                </button>
+                <button
+                  onClick={() => { setOpenMenu(false); navigate('/history'); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                >
+                  Historial de compras
+                </button>
+                {user?.role === 'Support' && (
+                  <button
+                    onClick={() => { setOpenMenu(false); navigate('/compose'); }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    Enviar mensaje
+                  </button>
+                )}
+                <button
+                  onClick={() => { setOpenMenu(false); logout(); navigate('/'); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#b91c1c' }}
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
