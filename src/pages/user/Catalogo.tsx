@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import './Catalogo.css';
 import { useCart } from '../../context/CartContext';
 import { toast } from '../../hooks/useToast';
@@ -27,6 +27,8 @@ export default function Catalogo(): React.ReactElement {
   const [items, setItems] = React.useState<InvItem[]>(readInventory());
   const [justAddedId, setJustAddedId] = React.useState<string | null>(null);
   const [view, setView] = React.useState<InvItem | null>(null);
+  const [query, setQuery] = React.useState<string>('');
+  const [filtered, setFiltered] = React.useState<InvItem[]>(items);
 
   React.useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -41,6 +43,19 @@ export default function Catalogo(): React.ReactElement {
     };
   }, []);
 
+  // Filtrado dinÃ¡mico por tÃ©rmino de bÃºsqueda
+  React.useEffect(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) { setFiltered(items); return; }
+    setFiltered(
+      items.filter(p =>
+        String(p.id).toLowerCase().includes(q) ||
+        (p.nombre || '').toLowerCase().includes(q) ||
+        (p.descripcion || '').toLowerCase().includes(q)
+      )
+    );
+  }, [items, query]);
+
   const onAdd = (p: InvItem) => {
     addToCart(
       { id: p.id as any, nombre: p.nombre, descripcion: p.descripcion, precio: p.precio, stock: p.stock, imagen: p.imagen } as any,
@@ -49,16 +64,32 @@ export default function Catalogo(): React.ReactElement {
     setJustAddedId(String(p.id));
     window.setTimeout(() => setJustAddedId(null), 1000);
     try {
-      toast('✅ Producto añadido al carrito');
+      toast('Producto añadido al carrito');
     } catch {}
   };
 
   return (
     <section className="cat">
-      {!items.length && <div className="cat__empty">🛒 No hay productos disponibles actualmente.</div>}
+      <div className="cat__bar">
+        <div className="cat__search">
+          <span className="cat__icon" aria-hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+          <input
+            className="cat__input"
+            placeholder="Buscar producto..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        <button className="cat__clear" onClick={() => setQuery('')}>Limpiar</button>
+      </div>
+      {!items.length && <div className="cat__empty">ðŸ›’ No hay productos disponibles actualmente.</div>}
 
       <div className="cat__grid">
-        {items.map((p) => (
+        {filtered.map((p) => (
           <article key={p.id} className={`cat__card ${justAddedId === String(p.id) ? 'cat__card--pulse' : ''}`}>
             <div className="cat__imageWrap">
               {p.imagen ? (

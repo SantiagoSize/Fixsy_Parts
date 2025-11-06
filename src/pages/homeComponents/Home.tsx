@@ -2,6 +2,7 @@ import './Home.css';
 import HeroComponent from './HeroComponent';
 import OffersCarousel from './OffersCarousel';
 import MostVisited from './MostVisited';
+import UserInboxPreview from './UserInboxPreview';
 
 function Home() {
   return (
@@ -9,6 +10,7 @@ function Home() {
       <HeroComponent />
       <OffersCarousel />
       <MostVisited />
+      <UserInboxPreview />
     </div>
   );
 }

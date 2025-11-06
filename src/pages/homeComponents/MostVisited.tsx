@@ -49,7 +49,7 @@ export default function MostVisited(): React.ReactElement {
   if (!items.length) {
     return (
       <section className="mv">
-        <h2 className="mv__title">Ofertas destacadas</h2>
+        <h2 className="mv__title">Mejores Ofertas</h2>
         <div className="mv__empty">🛒 No hay productos disponibles en el catálogo.</div>
       </section>
     );
@@ -64,7 +64,7 @@ export default function MostVisited(): React.ReactElement {
 
   return (
     <section className="mv">
-      <h2 className="mv__title">Ofertas destacadas</h2>
+      <h2 className="mv__title">Mejores Ofertas</h2>
       <div className="mv__grid">
         {sample.map(p => (
           <article key={p.id} className="mv__card">

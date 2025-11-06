@@ -15,6 +15,7 @@ import Inbox from '../pages/account/Inbox';
 import ComposeMessage from '../pages/support/ComposeMessage';
 import PurchaseHistory from '../pages/account/PurchaseHistory';
 import Catalogo from '../pages/user/Catalogo';
+import { RequireAdmin, RequireSupport, RequireAuth } from './Guards';
 
 // Placeholders hasta que se agreguen las páginas reales
 const CatalogPlaceholder = () => <div style={{ padding: '1rem' }}>Catálogo (en progreso)</div>;
@@ -25,24 +26,24 @@ function AppRoutes(): React.ReactElement {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/catalog" element={<Catalogo />} />
-      <Route path="/cart" element={<CartView />} />
+      <Route path="/cart" element={<RequireAuth><CartView /></RequireAuth>} />
       <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
       {/* Dashboard (Admin/Soporte) */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route path="admin" element={<AdminHome />} />
-        <Route path="support" element={<SupportHome />} />
+        <Route path="admin" element={<RequireAdmin><AdminHome /></RequireAdmin>} />
+        <Route path="support" element={<RequireSupport><SupportHome /></RequireSupport>} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/inbox" element={<Inbox />} />
-      <Route path="/compose" element={<ComposeMessage />} />
-      <Route path="/history" element={<PurchaseHistory />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/inbox" element={<RequireAuth><Inbox /></RequireAuth>} />
+      <Route path="/compose" element={<RequireAuth><ComposeMessage /></RequireAuth>} />
+      <Route path="/history" element={<RequireAuth><PurchaseHistory /></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
       <Route path="*" element={<NotFoundPlaceholder />} />
     </Routes>
   );
