@@ -1,10 +1,12 @@
 import React from 'react';
+import body1 from '../../assets/Body1.png';
+import body2 from '../../assets/Body2.png';
+import body3 from '../../assets/Body 3.png';
 
-const offers = [
-  'Hasta 30% OFF en frenos',
-  '2x1 en escobillas este fin de semana',
-  'Aceites y lubricantes con descuento',
-  'Despacho gratis sobre $50.000',
+const slides = [
+  { src: body1, alt: 'Promoción 1' },
+  { src: body2, alt: 'Promoción 2' },
+  { src: body3, alt: 'Promoción 3' },
 ];
 
 function OffersCarousel(): React.ReactElement {
@@ -12,23 +14,16 @@ function OffersCarousel(): React.ReactElement {
 
   React.useEffect(() => {
     const id = setInterval(() => {
-      setIndex((prev) => (prev + 1) % offers.length);
-    }, 3000);
+      setIndex((prev) => (prev + 1) % slides.length);
+    }, 3500);
     return () => clearInterval(id);
   }, []);
 
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='300'>` +
-    `<rect width='100%' height='100%' fill='%23f2f1f2'/>` +
-    `<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='24'>Oferta</text>` +
-    `</svg>`;
-  const placeholderSrc = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const current = slides[index];
 
   return (
     <section className="home-carousel" aria-label="Ofertas">
-      <img className="home-carousel__image" src={placeholderSrc} alt="Imagen de oferta" />
-      <div className="home-carousel__text" aria-live="polite">
-        {offers[index]}
-      </div>
+      <img className="home-carousel__image" src={current.src} alt={current.alt} />
     </section>
   );
 }
