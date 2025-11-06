@@ -1,10 +1,13 @@
-﻿// ðŸ§¹ FIXSY CLEANUP: organised structure, no logic changes
+// 🧹 FIXSY CLEANUP: organised structure, no logic changes
 import React from "react";
 import { DashContext } from "./DashboardLayout";
 import { useAuth } from "../context/AuthContext";
 import Profile from "./components/DashboardProfile";
 import Inbox from "./components/Inbox";
+import InventoryCsvUpload from "./components/InventoryCsvUpload";
 import UserManagement from "./components/UserManagement";
+import DashboardWidgets from "./components/DashboardWidgets";
+import ProductsList from "./components/ProductsList";
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -35,8 +38,12 @@ export default function AdminHome() {
               {initial}
             </div>
           )}
-          <div style={{ fontWeight: 800, fontSize: 20 }}>Hola, {fullName || 'Usuario'}</div>
+          <div style={{ fontWeight: 800, fontSize: 20 }}>Bienvenido, {fullName || 'Usuario'}! 🙂</div>
         </div>
+      )}
+
+      {(key === 'home') && (
+        <DashboardWidgets />
       )}
 
       {key === 'inbox' && (
@@ -44,10 +51,10 @@ export default function AdminHome() {
       )}
 
       {key === 'inventory' && (
-        <SectionCard title="Inventario">Tabla editable de stock y precios (mock).</SectionCard>
+        <SectionCard title="🧾 Inventario (CSV Upload)"><InventoryCsvUpload /></SectionCard>
       )}
       {key === 'products' && (
-        <SectionCard title="Editar productos">Formulario simple: tÃ­tulo, fotos, descripciÃ³n (mock).</SectionCard>
+        <SectionCard title="Productos"><ProductsList /></SectionCard>
       )}
       {key === 'users' && (
         <SectionCard title="Administrar usuarios"><UserManagement /></SectionCard>
@@ -69,5 +76,6 @@ export default function AdminHome() {
 
 
       {/* Bandeja deshabilitada en Admin: solo Inicio */}
+
 
 

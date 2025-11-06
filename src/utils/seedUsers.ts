@@ -133,6 +133,41 @@ export function ensureCoreAccounts() {
   try { localStorage.setItem(MGMT_KEY, JSON.stringify(mgmt)); } catch {}
 }
 
+// Asegura que los 3 usuarios demo @gmail.com existan en auth y gestión
+export function ensureDemoUsersGmailPresent() {
+  const demos = [
+    { nombre: 'Lucas', apellido: 'Morales', email: 'lucas.morales@gmail.com' },
+    { nombre: 'Valentina', apellido: 'Rojas', email: 'valentina.rojas@gmail.com' },
+    { nombre: 'Diego', apellido: 'Castro', email: 'diego.castro@gmail.com' },
+  ];
+  let auth: AuthUser[] = [];
+  try { const raw = localStorage.getItem(AUTH_KEY); auth = raw ? JSON.parse(raw) as AuthUser[] : []; } catch { auth = []; }
+  if (!Array.isArray(auth)) auth = [];
+  let mgmt: MgmtUser[] = [] as any;
+  try { const raw = localStorage.getItem(MGMT_KEY); mgmt = raw ? JSON.parse(raw) as MgmtUser[] : []; } catch { mgmt = []; }
+  if (!Array.isArray(mgmt)) mgmt = [] as any;
+
+  let changedAuth = false, changedMgmt = false;
+  demos.forEach(d => {
+    const foundA = auth.find(u => (u.email||'').toLowerCase() === d.email);
+    if (!foundA) {
+      const u: AuthUser = { id: uuid(), nombre: d.nombre, apellido: d.apellido, email: d.email, password: '12345678', role: 'Usuario' };
+      auth.push(u); changedAuth = true;
+      // also add to mgmt
+      const m: MgmtUser = { id: u.id, nombre: u.nombre, apellido: u.apellido, email: u.email, role: 'Usuario', status: 'Activo', historialCompras: [], tickets: [] };
+      mgmt.push(m); changedMgmt = true;
+    } else {
+      const foundM = mgmt.find(x => (x.email||'').toLowerCase() === d.email);
+      if (!foundM) {
+        const m: MgmtUser = { id: foundA.id, nombre: foundA.nombre, apellido: foundA.apellido, email: foundA.email, role: 'Usuario', status: 'Activo', historialCompras: [], tickets: [] };
+        mgmt.push(m); changedMgmt = true;
+      }
+    }
+  });
+  if (changedAuth) try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch {}
+  if (changedMgmt) try { localStorage.setItem(MGMT_KEY, JSON.stringify(mgmt)); } catch {}
+}
+
 // Crea (si no existe) un correo de Soporte (Matías) hacia Admin (Santiago)
 export function ensureSupportToAdminMail() {
   const adminEmail = 'santiago@admin.fixsy.com';
@@ -185,9 +220,9 @@ export function seedDemoUsersAndMail() {
   const supportMailbox = 'matias@soporte.fixsy.com'; // bandeja pública de soporte
   const supportLogin = 'matias@soporte.fixsy.com'; // cuenta de soporte que envía a admin
   const demoUsers = [
-    { nombre: 'Lucas', apellido: 'Morales', email: 'lucas.morales@mail.com' },
-    { nombre: 'Valentina', apellido: 'Rojas', email: 'valentina.rojas@mail.com' },
-    { nombre: 'Diego', apellido: 'Castro', email: 'diego.castro@mail.com' },
+    { nombre: 'Lucas', apellido: 'Morales', email: 'lucas.morales@gmail.com' },
+    { nombre: 'Valentina', apellido: 'Rojas', email: 'valentina.rojas@gmail.com' },
+    { nombre: 'Diego', apellido: 'Castro', email: 'diego.castro@gmail.com' },
   ];
 
   // Helpers inbox

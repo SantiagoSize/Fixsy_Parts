@@ -26,10 +26,11 @@ export default function Sidebar({ role, onLogout }: Props) {
 
   const badge = (n?: number) => (n && n > 0) ? (n > 99 ? '99+' : String(n)) : '';
 
-  const adminMenu: { key: DashKey; label: string; icon: string; badge?: string }[] = [
+  const adminMenu: { key: DashKey; label: string; icon?: string; badge?: string }[] = [
     { key: 'home', label: 'Inicio', icon: "\uD83C\uDFE0" },
     { key: 'inbox', label: 'Bandeja de entrada', icon: "\uD83D\uDCE5", badge: badge(unread) },
-    { key: 'inventory', label: 'Inventario', icon: "\uD83D\uDCE6" },
+    // Inventario: dejar solo 1 emoji (hoja) en la etiqueta; sin icono adicional
+    { key: 'inventory', label: '🧾 Inventario' },
     { key: 'products', label: 'Productos', icon: "\uD83D\uDED2" },
     { key: 'users', label: 'Usuarios', icon: "\uD83D\uDC65" },
     { key: 'profile', label: 'Perfil', icon: "\uD83D\uDC64" },
@@ -68,8 +69,17 @@ export default function Sidebar({ role, onLogout }: Props) {
 
       <div className="fxdash__menu" role="navigation" aria-label="Menu">
         {menu.map(m => (
-          <button key={m.key} className={`fxdash__item ${key === m.key ? 'fxdash__item--active' : ''}`} onClick={() => setKey(m.key)}>
-            <span style={{ fontSize: 20 }}>{m.icon}</span>
+          <button
+            key={m.key}
+            className={`fxdash__item ${key === m.key ? 'fxdash__item--active' : ''}`}
+            onClick={() => {
+              try { localStorage.setItem('fixsy_dash_key', m.key as any); } catch {}
+              setKey(m.key);
+              // Forzar recarga para que otros módulos detecten nuevos datos (fotos, archivos, etc.)
+              window.location.reload();
+            }}
+          >
+            {m.icon ? (<span style={{ fontSize: 20 }}>{m.icon}</span>) : null}
             <span>{m.label}</span>
             {m.badge && (
               <span style={{ marginLeft: 'auto', background: '#ef4444', color: '#fff', borderRadius: 999, padding: '2px 6px', fontSize: 12 }}>{m.badge}</span>

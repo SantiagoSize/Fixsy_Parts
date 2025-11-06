@@ -7,7 +7,7 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { MessagesProvider } from './context/MessagesContext';
 import { __seedFixsyMessagesOnce } from './messages/MessagesContext';
-import { seedAuthUsersOnce, seedManagementUsersOnce, setAllAuthPasswords, pruneUsersToCore, seedDemoUsersAndMail, ensureCoreAccounts, ensureSupportToAdminMail } from './utils/seedUsers';
+import { seedAuthUsersOnce, seedManagementUsersOnce, setAllAuthPasswords, pruneUsersToCore, seedDemoUsersAndMail, ensureCoreAccounts, ensureSupportToAdminMail, ensureDemoUsersGmailPresent } from './utils/seedUsers';
 import { seedItemsOnce, seedPurchasesOnce, seedPurchasesForEmails } from './utils/seedStore';
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
@@ -39,11 +39,12 @@ function FixsyPartsApp() {
     try { seedAuthUsersOnce(); } catch {}
     try { seedManagementUsersOnce(); } catch {}
     try { setAllAuthPasswords('12345678'); } catch {}
-    try { pruneUsersToCore(['santiago@admin.fixsy.com','matias@soporte.fixsy.com','lucas.morales@mail.com','valentina.rojas@mail.com','diego.castro@mail.com']); } catch {}
+    try { pruneUsersToCore(['santiago@admin.fixsy.com','matias@soporte.fixsy.com','lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
     try { ensureCoreAccounts(); } catch {}
+    try { ensureDemoUsersGmailPresent(); } catch {}
     try { seedItemsOnce(); } catch {}
     try { seedPurchasesOnce(); } catch {}
-    try { seedPurchasesForEmails(['lucas.morales@mail.com','valentina.rojas@mail.com','diego.castro@mail.com']); } catch {}
+    try { seedPurchasesForEmails(['lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
     try { seedDemoUsersAndMail(); } catch {}
     try { ensureSupportToAdminMail(); } catch {}
   }, []);

@@ -33,7 +33,7 @@ export default function SupportHome() {
             ) : (
               <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#E5E7EB', color: '#2C2A2B', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 32 }} aria-label="Avatar">{initial}</div>
             )}
-            <div style={{ fontWeight: 800, fontSize: 20 }}>Hola, {fullName || 'Usuario'}</div>
+            <div style={{ fontWeight: 800, fontSize: 20 }}>Bienvenido, {fullName || 'Usuario'}! 🙂</div>
           </div>
           {/* Inicio: sin inbox */}
         </>

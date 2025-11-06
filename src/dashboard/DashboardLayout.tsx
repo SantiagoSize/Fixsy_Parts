@@ -21,7 +21,15 @@ export default function DashboardLayout() {
     if (!user || (!isAdmin && !isSupport)) nav('/');
   }, [user, isAdmin, isSupport, nav]);
 
-  const [key, setKey] = React.useState<DashKey>('home');
+  const [key, setKey] = React.useState<DashKey>(() => {
+    try {
+      const k = localStorage.getItem('fixsy_dash_key') as DashKey | null;
+      return (k as DashKey) || 'home';
+    } catch { return 'home'; }
+  });
+  React.useEffect(() => {
+    try { localStorage.setItem('fixsy_dash_key', key as string); } catch {}
+  }, [key]);
   const topbarStyle: React.CSSProperties = {
     background: isAdmin ? '#6B4DFF' : '#FF6D00',
     color: '#FFFFFF',
@@ -47,4 +55,3 @@ export default function DashboardLayout() {
     </DashContext.Provider>
   );
 }
-
