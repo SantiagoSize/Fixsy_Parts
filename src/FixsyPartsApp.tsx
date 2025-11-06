@@ -9,9 +9,11 @@ import { MessagesProvider } from './context/MessagesContext';
 import { __seedFixsyMessagesOnce } from './messages/MessagesContext';
 import { seedAuthUsersOnce, seedManagementUsersOnce, setAllAuthPasswords, pruneUsersToCore, seedDemoUsersAndMail, ensureCoreAccounts, ensureSupportToAdminMail, ensureDemoUsersGmailPresent } from './utils/seedUsers';
 import { seedItemsOnce, seedPurchasesOnce, seedPurchasesForEmails } from './utils/seedStore';
+import { seedInventoryOnce } from './utils/inventory';
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
+import { seedTicketsOnce } from './utils/seedTickets';
 // Error popup eliminado temporalmente
 
 function AppShell() {
@@ -42,11 +44,14 @@ function FixsyPartsApp() {
     try { pruneUsersToCore(['santiago@admin.fixsy.com','matias@soporte.fixsy.com','lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
     try { ensureCoreAccounts(); } catch {}
     try { ensureDemoUsersGmailPresent(); } catch {}
+    // Semilla de inventario del catálogo (si está vacío)
+    try { seedInventoryOnce(); } catch {}
     try { seedItemsOnce(); } catch {}
     try { seedPurchasesOnce(); } catch {}
     try { seedPurchasesForEmails(['lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
     try { seedDemoUsersAndMail(); } catch {}
     try { ensureSupportToAdminMail(); } catch {}
+    try { seedTicketsOnce(); } catch {}
   }, []);
   return (
     <AuthProvider>

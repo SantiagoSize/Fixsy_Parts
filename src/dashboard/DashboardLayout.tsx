@@ -44,7 +44,7 @@ export default function DashboardLayout() {
         <section className="fxdash__main">
           <div className="fxdash__topbar" style={topbarStyle}>
             <div className="fxdash__topbarInner">
-              {isAdmin ? 'Panel de AdministraciÃ³n' : 'Panel de Soporte'}
+              {isAdmin ? 'Panel de Administración' : 'Panel de Soporte'}
             </div>
           </div>
           <div className="fxdash__content">
@@ -55,3 +55,4 @@ export default function DashboardLayout() {
     </DashContext.Provider>
   );
 }
+

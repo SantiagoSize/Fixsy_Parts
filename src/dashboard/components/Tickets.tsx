@@ -1,5 +1,6 @@
-import React from "react";
-import { useAuth } from "../../context/AuthContext";
+﻿import React from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useMessages } from '../../context/MessagesContext';
 
 type TicketStatus = 'Abierto' | 'En progreso' | 'Cerrado';
 
@@ -26,7 +27,7 @@ function loadTicketsFor(email: string): Ticket[] {
   try {
     const raw = localStorage.getItem(TICKETS_PREFIX + email.toLowerCase());
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed as Ticket[] : [];
+    return Array.isArray(parsed) ? (parsed as Ticket[]) : [];
   } catch { return []; }
 }
 
@@ -36,6 +37,7 @@ function saveTicketsFor(email: string, list: Ticket[]) {
 
 export default function Tickets() {
   const { user } = useAuth();
+  const { send: sendMessage } = useMessages();
   const email = (user?.email || '').toLowerCase();
   const isSupport = user?.role === 'Soporte';
 
@@ -44,13 +46,15 @@ export default function Tickets() {
   const [view, setView] = React.useState<Ticket | null>(null);
   const [reply, setReply] = React.useState('');
   const [toast, setToast] = React.useState('');
+  const [ownerEmail, setOwnerEmail] = React.useState('');
+  const [subject, setSubject] = React.useState('');
+  const [body, setBody] = React.useState('');
 
   const load = React.useCallback(() => {
     if (!isSupport) {
       setAllTickets(loadTicketsFor(email));
       return;
     }
-    // Soporte: agregar todos los tickets de todas las cuentas
     const list: Ticket[] = [];
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -61,12 +65,24 @@ export default function Tickets() {
         }
       }
     } catch {}
-    // Orden por fecha desc
     list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     setAllTickets(list);
   }, [email, isSupport]);
 
   React.useEffect(() => { load(); }, [load]);
+  React.useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (!e || (e.key && !e.key.startsWith(TICKETS_PREFIX))) return;
+      load();
+    };
+    const onFocus = () => load();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [load]);
 
   const filtered = React.useMemo(() => {
     const q = query.toLowerCase();
@@ -79,7 +95,6 @@ export default function Tickets() {
   }, [allTickets, query]);
 
   const setStatus = (t: Ticket, status: TicketStatus) => {
-    // Actualiza en el storage del dueño y refresca
     const owner = t.ownerEmail.toLowerCase();
     const list = loadTicketsFor(owner).map(x => x.id === t.id ? { ...x, status } : x);
     saveTicketsFor(owner, list);
@@ -105,11 +120,44 @@ export default function Tickets() {
     setToast('Respuesta enviada.');
     setTimeout(() => setToast(''), 2500);
     setView(v => v && v.id === t.id ? { ...v, messages: [...(v.messages||[]), msg] } : v);
+    try { sendMessage(owner, `Soporte respondió a tu ticket ${t.id}: ${msg.body.slice(0,120)}${msg.body.length>120?'...':''}`); } catch {}
+  };
+
+  const createTicket = () => {
+    const owner = (ownerEmail || '').trim().toLowerCase();
+    const okEmail = /.+@.+\..+/.test(owner);
+    if (!okEmail) { setToast('Ingresa un correo válido del usuario'); setTimeout(() => setToast(''), 2200); return; }
+    const id = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const createdAt = new Date().toISOString();
+    const messages: TicketMessage[] = body.trim()
+      ? [{ id: id + '_m1', from: email, to: owner, body: body.trim(), date: createdAt }]
+      : [];
+    const ticket: Ticket = { id, ownerEmail: owner, subject: subject.trim() || 'Sin asunto', status: 'Abierto', createdAt, messages };
+    const list = loadTicketsFor(owner);
+    saveTicketsFor(owner, [ticket, ...list]);
+    setOwnerEmail(''); setSubject(''); setBody('');
+    setToast('Ticket creado');
+    setTimeout(() => setToast(''), 2200);
+    setView(ticket);
+    load();
   };
 
   return (
     <div className="user-panel">
       <h2 style={{ marginTop: 0 }}>Tickets</h2>
+      {isSupport && (
+        <div className="user-card" style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+          <div style={{ fontWeight: 700 }}>Crear ticket</div>
+          <div style={{ display: 'grid', gap: 6, gridTemplateColumns: '1fr', alignItems: 'center' }}>
+            <input className="search-bar" placeholder="Correo del usuario" value={ownerEmail} onChange={e=>setOwnerEmail(e.target.value)} />
+            <input className="search-bar" placeholder="Asunto" value={subject} onChange={e=>setSubject(e.target.value)} />
+            <textarea className="search-bar" placeholder="Mensaje (opcional)" value={body} onChange={e=>setBody(e.target.value)} rows={3} />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={createTicket}>Crear</button>
+            </div>
+          </div>
+        </div>
+      )}
       <input className="search-bar" placeholder="Buscar por ID, asunto o email" value={query} onChange={e=>setQuery(e.target.value)} />
 
       <div className="user-table-wrap">
@@ -146,7 +194,7 @@ export default function Tickets() {
       {view && (
         <div className="user-modal-overlay" role="dialog" aria-modal="true" onClick={() => setView(null)}>
           <div className="user-modal" onClick={e=>e.stopPropagation()}>
-            <button className="user-modal__close" onClick={() => setView(null)} aria-label="Cerrar">✖</button>
+            <button className="user-modal__close" onClick={() => setView(null)} aria-label="Cerrar">×</button>
             <h3 style={{ marginTop: 0 }}>Ticket {view.id}</h3>
             <p style={{ margin: 0 }}><b>Correo:</b> {view.ownerEmail}</p>
             <p style={{ margin: 0 }}><b>Asunto:</b> {view.subject}</p>
@@ -162,7 +210,7 @@ export default function Tickets() {
                 <ul>
                   {view.messages.map(m => (
                     <li key={m.id}>
-                      <b>{m.from}</b> → {m.to} — <i>{new Date(m.date).toLocaleString()}</i>
+                      <b>{m.from}</b> → {m.to} • <i>{new Date(m.date).toLocaleString()}</i>
                       <div style={{ whiteSpace: 'pre-wrap' }}>{m.body}</div>
                     </li>
                   ))}
@@ -181,4 +229,3 @@ export default function Tickets() {
     </div>
   );
 }
-

@@ -33,10 +33,7 @@ export default function Login() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email || !password) {
-      setError('Por favor completa todos los campos');
-      return;
-    }
+    if (!email || !password) { setError('Por favor completa todos los campos'); return; }
     const emailOk = /.+@.+\..+/.test(email);
     if (!emailOk) { setError('Ingresa un email válido'); return; }
     if (shouldShowCaptcha) {
@@ -47,40 +44,11 @@ export default function Login() {
     if (!ok) {
       setError('Credenciales incorrectas');
       setFailedAttempts(prev => prev + 1);
-      if (shouldShowCaptcha && siteKey) {
-        try { recaptchaRef.current?.reset(); } catch {}
-        setRecaptchaToken(null);
-      }
+      try { (recaptchaRef.current as any)?.reset(); } catch {}
+      setRecaptchaToken(null);
       return;
     }
-    // Control de acceso por estado (Bloqueado/Suspendido) desde fixsyUsers
-    try {
-      const usersRaw = localStorage.getItem('fixsyUsers');
-      const list = usersRaw ? JSON.parse(usersRaw) : [];
-      const found = Array.isArray(list) ? list.find((u: any) => (u?.email || '').toLowerCase() === email.toLowerCase()) : null;
-      if (found) {
-        const status = String(found.status || 'Activo');
-        if (status === 'Bloqueado') {
-          setError('Tu cuenta está bloqueada. Contacta con soporte.');
-          return;
-        }
-        if (status === 'Suspendido') {
-          const until = found.suspensionHasta ? new Date(found.suspensionHasta) : null;
-          if (until && new Date() < until) {
-            setError(`Tu cuenta está suspendida hasta ${until.toLocaleDateString()}`);
-            return;
-          } else {
-            // Reactivar si ya expiró
-            found.status = 'Activo';
-            found.suspensionHasta = '';
-            const next = list.map((u: any) => u.email === found.email ? found : u);
-            localStorage.setItem('fixsyUsers', JSON.stringify(next));
-          }
-        }
-      }
-    } catch {}
 
-    setFailedAttempts(0);
     try {
       const raw = localStorage.getItem('fixsy_current_user');
       const s = raw ? JSON.parse(raw) : null;
@@ -109,7 +77,7 @@ export default function Login() {
               {siteKey ? (
                 <div style={{ display: 'grid', gap: 6 }}>
                   <ReCAPTCHA
-                    ref={recaptchaRef}
+                    ref={recaptchaRef as any}
                     sitekey={siteKey}
                     onChange={(token) => setRecaptchaToken(token)}
                     onExpired={() => setRecaptchaToken(null)}

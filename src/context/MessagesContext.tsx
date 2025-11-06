@@ -66,6 +66,18 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = React.useMemo(() => ({ messages, send, forUser, markRead, unreadCount }), [messages, send, forUser, markRead, unreadCount]);
 
+  // Actualizaciones simuladas en tiempo real: storage + focus
+  React.useEffect(() => {
+    const onStorage = (e: StorageEvent) => { if (!e || (e.key && e.key !== MSG_KEY)) return; setMessages(loadMessages()); };
+    const onFocus = () => setMessages(loadMessages());
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
   return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;
 }
 

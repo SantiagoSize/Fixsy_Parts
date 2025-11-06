@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useMessages } from '../../context/MessagesContext';
 
@@ -11,7 +11,7 @@ export default function ComposeMessage() {
   const [err, setErr] = React.useState<string | null>(null);
 
   if (!user) return <div style={{ padding: '1rem' }}>Debes iniciar sesión.</div>;
-  if (user.role !== 'Support') return <div style={{ padding: '1rem' }}>No tienes permisos para enviar mensajes.</div>;
+  if (user.role !== 'Soporte') return <div style={{ padding: '1rem' }}>No tienes permisos para enviar mensajes.</div>;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();

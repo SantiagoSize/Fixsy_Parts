@@ -55,12 +55,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (found) {
+      // Determinar rol por dominio de correo en el login
+      const emailLower = (found.email || '').trim().toLowerCase();
+      const domain = (emailLower.split('@')[1] || '').trim();
+      const computedRole: Role =
+        domain === 'admin.fixsy.com' ? 'Admin' :
+        domain === 'soporte.fixsy.com' ? 'Soporte' :
+        'Usuario';
+
+      // Si difiere, actualizar el usuario persistido para mantener consistencia
+      if (found.role !== computedRole) {
+        try {
+          const nextUsers = users.map(u => u.email.toLowerCase() === emailLower ? { ...u, role: computedRole } as AuthUser : u);
+          saveUsers(nextUsers);
+        } catch {}
+      }
+
       const sessionUser: Omit<AuthUser, 'password'> = {
         id: found.id,
         nombre: found.nombre,
         apellido: found.apellido,
         email: found.email,
-        role: found.role,
+        role: computedRole,
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
       setUser(sessionUser);
