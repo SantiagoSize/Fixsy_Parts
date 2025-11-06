@@ -4,7 +4,7 @@ import { useCart } from '../../context/CartContext';
 import './CartView.css';
 
 export interface CartProduct {
-  id: number;
+  id: string | number;
   nombre: string;
   precio: number;
   cantidad: number;

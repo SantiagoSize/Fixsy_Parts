@@ -1,30 +1,46 @@
 import React from 'react';
-import type { Product } from '../data/products';
 import { toast } from '../hooks/useToast';
 
-export type CartItem = {
-  product: Product;
-  quantity: number;
+type ProductLike = {
+  id: string | number;
+  nombre: string;
+  descripcion?: string;
+  precio: number;
+  stock: number;
+  imagen?: string;
 };
+
+export type CartItem = { product: ProductLike; quantity: number };
 
 type CartContextValue = {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  removeFromCart: (productId: number) => void;
+  addToCart: (product: ProductLike, quantity?: number) => void;
+  updateQuantity: (productId: string | number, quantity: number) => void;
+  removeFromCart: (productId: string | number) => void;
   clearCart: () => void;
   // Espacio para lógica futura de admin (restock)
-  restockProduct: (productId: number, amount: number) => void;
+  restockProduct: (productId: string | number, amount: number) => void;
 };
 
 const CartContext = React.createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = React.useState<CartItem[]>([]);
+  const STORAGE_KEY = 'fixsy_cart';
+  const [items, setItems] = React.useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) as CartItem[] : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  });
 
-  const addToCart = React.useCallback((product: Product, quantity = 1) => {
+  React.useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+  }, [items]);
+
+  const addToCart = React.useCallback((product: ProductLike, quantity = 1) => {
     setItems(prev => {
-      const idx = prev.findIndex(ci => ci.product.id === product.id);
+      const idx = prev.findIndex(ci => String(ci.product.id) === String(product.id));
       if (idx >= 0) {
         const current = prev[idx];
         const nextQty = current.quantity + quantity;
@@ -44,10 +60,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateQuantity = React.useCallback((productId: number, quantity: number) => {
+  const updateQuantity = React.useCallback((productId: string | number, quantity: number) => {
     setItems(prev => {
       return prev.map(ci => {
-        if (ci.product.id !== productId) return ci;
+        if (String(ci.product.id) !== String(productId)) return ci;
         // No permitir superar stock; mantener cantidad actual si se intenta exceder
         if (quantity > ci.product.stock) return ci;
         if (quantity < 1) return ci;
@@ -56,13 +72,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const removeFromCart = React.useCallback((productId: number) => {
-    setItems(prev => prev.filter(ci => ci.product.id !== productId));
+  const removeFromCart = React.useCallback((productId: string | number) => {
+    setItems(prev => prev.filter(ci => String(ci.product.id) !== String(productId)));
   }, []);
 
   const clearCart = React.useCallback(() => setItems([]), []);
 
-  const restockProduct = React.useCallback((_productId: number, _amount: number) => {
+  const restockProduct = React.useCallback((_productId: string | number, _amount: number) => {
     // reservado para implementación futura
   }, []);
 
@@ -79,3 +95,4 @@ export function useCart() {
   if (!ctx) throw new Error('useCart debe usarse dentro de CartProvider');
   return ctx;
 }
+

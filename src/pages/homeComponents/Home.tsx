@@ -1,14 +1,14 @@
 import './Home.css';
 import HeroComponent from './HeroComponent';
 import OffersCarousel from './OffersCarousel';
-import BestProductsComponent from './BestProductsComponent';
+import MostVisited from './MostVisited';
 
 function Home() {
   return (
     <div className="home-container">
       <HeroComponent />
       <OffersCarousel />
-      <BestProductsComponent />
+      <MostVisited />
     </div>
   );
 }

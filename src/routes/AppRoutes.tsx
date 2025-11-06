@@ -14,6 +14,7 @@ import Profile from '../pages/auth/Profile';
 import Inbox from '../pages/account/Inbox';
 import ComposeMessage from '../pages/support/ComposeMessage';
 import PurchaseHistory from '../pages/account/PurchaseHistory';
+import Catalogo from '../pages/user/Catalogo';
 
 // Placeholders hasta que se agreguen las páginas reales
 const CatalogPlaceholder = () => <div style={{ padding: '1rem' }}>Catálogo (en progreso)</div>;
@@ -23,7 +24,7 @@ function AppRoutes(): React.ReactElement {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/catalog" element={<CatalogPlaceholder />} />
+      <Route path="/catalog" element={<Catalogo />} />
       <Route path="/cart" element={<CartView />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/checkout" element={<Checkout />} />
