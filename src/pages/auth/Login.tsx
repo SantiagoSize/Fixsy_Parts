@@ -20,7 +20,6 @@ export default function Login() {
   const shouldUseCaptchaRoute = isAuthRoute(location.pathname);
   const shouldShowCaptcha = shouldUseCaptchaRoute && failedAttempts >= 2;
 
-  // Persistencia de intentos para mantener visible el captcha tras refrescar
   React.useEffect(() => {
     try {
       const raw = sessionStorage.getItem('fixsy_login_failed_attempts');
@@ -54,7 +53,41 @@ export default function Login() {
       }
       return;
     }
+    // Control de acceso por estado (Bloqueado/Suspendido) desde fixsyUsers
+    try {
+      const usersRaw = localStorage.getItem('fixsyUsers');
+      const list = usersRaw ? JSON.parse(usersRaw) : [];
+      const found = Array.isArray(list) ? list.find((u: any) => (u?.email || '').toLowerCase() === email.toLowerCase()) : null;
+      if (found) {
+        const status = String(found.status || 'Activo');
+        if (status === 'Bloqueado') {
+          setError('Tu cuenta está bloqueada. Contacta con soporte.');
+          return;
+        }
+        if (status === 'Suspendido') {
+          const until = found.suspensionHasta ? new Date(found.suspensionHasta) : null;
+          if (until && new Date() < until) {
+            setError(`Tu cuenta está suspendida hasta ${until.toLocaleDateString()}`);
+            return;
+          } else {
+            // Reactivar si ya expiró
+            found.status = 'Activo';
+            found.suspensionHasta = '';
+            const next = list.map((u: any) => u.email === found.email ? found : u);
+            localStorage.setItem('fixsyUsers', JSON.stringify(next));
+          }
+        }
+      }
+    } catch {}
+
     setFailedAttempts(0);
+    try {
+      const raw = localStorage.getItem('fixsy_current_user');
+      const s = raw ? JSON.parse(raw) : null;
+      const role = s?.role;
+      if (role === 'Admin') { navigate('/dashboard/admin'); return; }
+      if (role === 'Soporte') { navigate('/dashboard/support'); return; }
+    } catch {}
     navigate('/');
   };
 

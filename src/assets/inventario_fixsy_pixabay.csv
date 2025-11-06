@@ -1,0 +1,11 @@
+id,nombre,descripcion,precio,stock,imagen
+1,Llave inglesa,Herramienta metálica ajustable para apretar tuercas.,4990,25,https://cdn.pixabay.com/photo/2016/03/27/22/16/wrench-1284711_1280.jpg
+2,Bujía NGK,Bujía de encendido para motor de automóvil.,7990,18,https://cdn.pixabay.com/photo/2016/10/28/23/48/spark-plug-1770680_1280.jpg
+3,Aceite 5W-30,Lubricante sintético para motor de alto rendimiento.,15990,10,https://cdn.pixabay.com/photo/2018/04/04/11/36/oil-3281184_1280.jpg
+4,Filtro de aire,Filtro de aire de repuesto para vehículos.,6990,15,https://cdn.pixabay.com/photo/2017/03/02/08/33/car-filter-2115168_1280.jpg
+5,Neumático Michelin,Neumático todo terreno para automóviles.,75990,8,https://cdn.pixabay.com/photo/2016/11/21/15/07/automobile-1846934_1280.jpg
+6,Pastillas de freno,Juego de pastillas de freno de cerámica premium.,19990,12,https://cdn.pixabay.com/photo/2016/09/23/14/47/brake-disc-1695938_1280.jpg
+7,Batería Bosch,Batería de auto de larga duración.,89990,7,https://cdn.pixabay.com/photo/2017/03/01/11/18/car-battery-2113140_1280.jpg
+8,Amortiguador KYB,Amortiguador trasero de gas de alta resistencia.,34990,9,https://cdn.pixabay.com/photo/2016/03/27/22/16/spring-1284709_1280.jpg
+9,Correa de distribución,Correa dentada para sincronización del motor.,18990,11,https://cdn.pixabay.com/photo/2015/06/22/08/39/car-818176_1280.jpg
+10,Anticongelante Castrol,Líquido refrigerante y protector del radiador.,8990,20,https://cdn.pixabay.com/photo/2015/02/26/15/42/antifreeze-650745_1280.jpg

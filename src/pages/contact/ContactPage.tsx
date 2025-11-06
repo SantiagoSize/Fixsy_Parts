@@ -1,11 +1,13 @@
 import React from 'react';
 import './ContactPage.css';
+import useMessages from '../../messages/useMessages';
 
 function ContactPage(): React.ReactElement {
   const [sent, setSent] = React.useState<string | null>(null);
   const [form, setForm] = React.useState({ nombre: '', correo: '', asunto: '', mensaje: '' });
   const [files, setFiles] = React.useState<File[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const { send } = useMessages();
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -14,13 +16,19 @@ function ContactPage(): React.ReactElement {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const attachments = files.map(f => f.name);
+      const receiver = 'soporte@fixsy.com';
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _s = (send as any) && send({ sender: form.correo, receiver, subject: form.asunto, body: `${form.nombre}\n\n${form.mensaje}`, attachments });
+    } catch {}
     // Simulación de envío al sistema interno de soporte (a implementar):
     // Guardamos el mensaje en localStorage como una "bandeja de entrada" local.
     try {
       const key = 'fixsy_support_messages';
       const prev = JSON.parse(localStorage.getItem(key) || '[]');
       const payload = {
-        to: 'soporte@fixsy.cl',
+        to: 'soporte@fixsy.com',
         nombre: form.nombre,
         correo: form.correo,
         asunto: form.asunto,
@@ -32,6 +40,37 @@ function ContactPage(): React.ReactElement {
     } catch (_) {
       // ignorar errores de almacenamiento local
     }
+    // Broadcast a todos los soportes (bandejas por cuenta) y crear ticket
+    try {
+      const inboxKey = (email: string) => `fixsy_inbox_${email.toLowerCase()}`;
+      const loadInbox = (email: string) => { try { const raw = localStorage.getItem(inboxKey(email)); return raw ? JSON.parse(raw) : []; } catch { return []; } };
+      const saveInbox = (email: string, list: any[]) => { try { localStorage.setItem(inboxKey(email), JSON.stringify(list)); } catch {} };
+      const msg = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+        conversationId: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+        from: (form.correo||'').toLowerCase(),
+        to: 'soporte@fixsy.com',
+        subject: form.asunto,
+        message: `${form.nombre}\n\n${form.mensaje}`,
+        date: new Date().toISOString(),
+        read: false, important: false, archived: false, deleted: false,
+        attachments: files.map(f=>f.name),
+      } as any;
+      // enviados del remitente
+      const out = loadInbox(form.correo); out.unshift({ ...msg, id: `${msg.id}_s`, read: true }); saveInbox(form.correo, out);
+      // broadcast a soportes
+      const raw = localStorage.getItem('fixsy_users');
+      const auth = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(auth)) {
+        auth.filter((u:any)=>String(u.role)==='Soporte' && u.email)
+            .forEach((u:any)=>{ const ib = loadInbox(u.email); ib.unshift({ ...msg, to: String(u.email).toLowerCase() }); saveInbox(u.email, ib); });
+      }
+      // crear ticket para el remitente
+      const tkey = `fixsy_tickets_${(form.correo||'').toLowerCase()}`;
+      const prevT = JSON.parse(localStorage.getItem(tkey) || '[]');
+      const t = { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, ownerEmail: (form.correo||'').toLowerCase(), subject: form.asunto, status: 'Abierto', createdAt: new Date().toISOString(), messages: [{ id: `${Date.now()}_m`, from: (form.correo||'').toLowerCase(), to: 'soporte@fixsy.com', body: form.mensaje, date: new Date().toISOString() }] };
+      localStorage.setItem(tkey, JSON.stringify([...(Array.isArray(prevT)?prevT:[]), t]));
+    } catch {}
     // Limpia formulario y archivos después de "enviar"
     setForm({ nombre: '', correo: '', asunto: '', mensaje: '' });
     setFiles([]);
@@ -69,7 +108,7 @@ function ContactPage(): React.ReactElement {
           <input id="nombre" name="nombre" value={form.nombre} onChange={onChange} required />
         </div>
         <div className="cp__row">
-          <label htmlFor="correo">Correo</label>
+          <label htmlFor="correo">Mi correo</label>
           <input id="correo" name="correo" type="email" value={form.correo} onChange={onChange} required />
         </div>
         <div className="cp__row">

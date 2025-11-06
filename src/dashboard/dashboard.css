@@ -1,0 +1,200 @@
+/* Sidebar + main panel styling for Fixsy Dashboard */
+/* 🧹 FIXSY CLEANUP: organised structure, no logic changes */
+
+.fxdash {
+  display: grid;
+  grid-template-columns: 320px 1fr; /* sidebar más ancho */
+  width: 100%;
+  height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #2C2A2B; /* base oscura */
+  font-family: Montserrat, sans-serif;
+  box-sizing: border-box;
+}
+
+.fxdash__sidebar {
+  position: fixed;
+  top: 0;
+  height: 100vh;
+  min-height: 100svh;
+  background: #2C2A2B; /* sidebar oscuro */
+  color: #E0E0E0;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: none;
+  box-shadow: none;
+  z-index: 20; /* por encima del topbar */
+}
+
+.fxdash__brand {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.fxdash__logo {
+  width: 80px; height: 80px; border-radius: 16px;
+  background: #2C2A2B; display: grid; place-items: center;
+}
+.fxdash__logo img { width: 64px; height: 64px; object-fit: contain; }
+.fxdash__brandTitle { font-weight: 800; color: #FFFFFF; font-size: 28px; }
+.fxdash__brandSubtitle { color: #C7C7C7; font-size: 18px; }
+
+.fxdash__user {
+  display: grid; justify-items: center; gap: 6px; padding: 8px 0;
+}
+.fxdash__avatar {
+  width: 64px; height: 64px; border-radius: 50%; background: #E5E7EB;
+  color: #2C2A2B; display: grid; place-items: center; font-weight: 800;
+}
+.fxdash__hello { font-size: 14px; }
+
+/* Ocultar perfil y saludo en el sidebar */
+.fxdash__user { display: none !important; }
+
+.fxdash__menu { display: grid; gap: 10px; margin-top: 12px; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto; }
+.fxdash__item { text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid transparent; background: transparent; cursor: pointer; color: #E0E0E0; font-size: 18px; transition: transform .15s ease, background-color .15s ease, border-color .15s ease; display: flex; align-items: center; gap: 12px; width: 100%; }
+.fxdash__item:hover { background: #3A3839; border-color: #3F3F46; }
+.fxdash__item:active { transform: scale(1.02); }
+.fxdash__item--active { background: #FFFFFF; color: #000000; border-color: transparent; }
+
+.fxdash__logout { margin-top: auto; position: fixed; bottom: 16px; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto; }
+.fxdash__logout button { width: 100%; background: #ef4444; color: #fff; border: none; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.fxdash__logout button:hover { background: #dc2626; }
+
+.fxdash__main { background: #ffffff; color: #1F2937; display: flex; flex-direction: column; height: 100vh;\n  min-height: 100svh; overflow: hidden; margin-left: 260px; width: calc(100vw - 260px); }
+.fxdash__topbar { width: 100%; height: 90px; display: grid; place-items: center; color: #FFFFFF; font-weight: 800; border: none; position: sticky; top: 0; left: 0; z-index: 10; font-size: 26px; letter-spacing: 0.3px; margin: 0; }
+.fxdash__content { padding: 24px; height: calc(100vh - 90px); overflow-y: auto; background: #ffffff; }
+
+.card { border: 1px solid #E5E7EB; border-radius: 12px; background: #fff; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+
+/* (Se removieron media queries duplicadas del enfoque anterior basado en grid) */
+
+/* === DASHBOARD EDGE-TO-EDGE OVERRIDES === */
+.fxdash { display: flex; width: 100%; height: 100vh; margin: 0; padding: 0; overflow: hidden; background: #2C2A2B; }
+.fxdash__sidebar { position: fixed; left: 0; top: 0; height: 100vh; width: 280px; background: #2C2A2B; border-right: 1px solid #1e1e1e; padding: 24px 16px; }
+.fxdash__main { margin-left: 280px; width: calc(100% - 280px); background: #ffffff; }
+.fxdash__topbar { position: fixed; left: 0; top: 0; width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 0 0 10px 10px; z-index: 5; margin: 0; font-size: 24px; font-weight: 600; color: #fff; font-family: 'Montserrat', sans-serif; }
+.fxdash__topbarInner { width: calc(100% - 280px); margin-left: 280px; height: 100%; display: flex; align-items: center; justify-content: center; }
+.fxdash__content { margin: 80px auto 0; background: #ffffff; border-radius: 16px; padding: 32px; height: calc(100vh - 80px); width: 100%; max-width: 90%; box-sizing: border-box; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+@media (max-width: 1024px) {
+  .fxdash__sidebar { width: 260px; }
+  .fxdash__main { margin-left: 260px; width: calc(100% - 260px); }
+  .fxdash__topbar { left: 0; width: 100%; }
+  .fxdash__topbarInner { width: calc(100% - 260px); margin-left: 260px; }
+  .fxdash__content { margin-top: 80px; width: 100%; max-width: 92%; height: calc(100vh - 80px); }
+}
+@media (max-width: 768px) {
+  .fxdash__sidebar { width: 240px; }
+  .fxdash__main { margin-left: 240px; width: calc(100% - 240px); }
+  .fxdash__topbar { left: 0; width: 100%; font-size: 22px; height: 72px; }
+  .fxdash__topbarInner { width: calc(100% - 240px); margin-left: 240px; }
+  .fxdash__content { padding: 16px; margin-top: 72px; height: calc(100vh - 72px); max-width: 94%; }
+}
+@media (max-width: 480px) {
+  .fxdash__sidebar { width: 220px; }
+  .fxdash__main { margin-left: 220px; width: calc(100% - 220px); }
+  .fxdash__topbar { left: 0; width: 100%; height: 64px; font-size: 20px; }
+  .fxdash__topbarInner { width: calc(100% - 220px); margin-left: 220px; }
+  .fxdash__content { padding: 12px; margin-top: 64px; height: calc(100vh - 64px); max-width: 96%; }
+}
+
+/* (reverted: no scale-up on root container) */
+
+/* === User Management (Gestión de usuarios) === */
+.user-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
+.search-bar {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  gap: 10px;
+}
+.role-tag.usuario { background: #dcdcdc; color: #000; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+.role-tag.admin { background: #6B4DFF; color: #fff; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+.role-tag.soporte { background: #FF7A00; color: #fff; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+.status.activo { color: green; font-weight: 600; }
+.status.bloqueado { color: red; font-weight: 600; }
+.status.suspendido { color: orange; font-weight: 600; }
+.user-detail {
+  position: fixed;
+  right: 40px;
+  top: 80px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 360px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.2);
+}
+.profile-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 8px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.actions button {
+  background: #6B4DFF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.actions input {
+  width: 70px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+.actions button:hover { background: #5536d1; }
+
+/* Tabla de usuarios */
+.user-table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+.user-table { width: 100%; border-collapse: collapse; }
+.user-table thead th { background: #F7F7FA; color: #111827; text-align: left; padding: 12px 14px; border-bottom: 1px solid #E5E7EB; }
+.user-table tbody td { padding: 12px 14px; border-bottom: 1px solid #F1F5F9; }
+.user-table tbody tr:hover { background: #FAFAFF; }
+
+/* Botón Ver morado */
+.btn-view { background: #6B4DFF; color: #fff; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
+.btn-view:hover { background: #5334d1; }
+
+/* Modal */
+.user-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: grid; place-items: center; z-index: 100; animation: fadeIn .15s ease-out; }
+.user-modal { background: #fff; width: min(720px, 92vw); border-radius: 14px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); position: relative; animation: scaleIn .18s ease-out; }
+.user-modal__close { position: absolute; right: 10px; top: 10px; background: transparent; border: none; cursor: pointer; font-size: 18px; }
+
+/* Ajustes para superposiciones internas (detalle compra / conversación) reutilizan .user-modal-overlay */
+.user-modal .user-item { border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px; }
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes scaleIn { from { transform: scale(.96); opacity: .8 } to { transform: scale(1); opacity: 1 } }
+
+/* Toast (abajo derecha) */
+.user-toast { position: fixed; right: 24px; bottom: 24px; background: #6B4DFF; color: #fff; border-radius: 10px; padding: 10px 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); z-index: 120; animation: toastIn .18s ease-out; }
+@keyframes toastIn { from { transform: translateY(10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }

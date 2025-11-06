@@ -30,6 +30,11 @@ function AppRoutes(): React.ReactElement {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      {/* Dashboard (Admin/Soporte) */}
+      <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route path="admin" element={<AdminHome />} />
+        <Route path="support" element={<SupportHome />} />
+      </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -43,3 +48,7 @@ function AppRoutes(): React.ReactElement {
 }
 
 export default AppRoutes;
+// 🧹 FIXSY CLEANUP: organised structure, no logic changes
+import DashboardLayout from '../dashboard/DashboardLayout';
+import AdminHome from '../dashboard/AdminHome';
+import SupportHome from '../dashboard/SupportHome';

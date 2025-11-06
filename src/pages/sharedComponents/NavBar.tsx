@@ -1,12 +1,15 @@
-import './NavBar.css';
+﻿import './NavBar.css';
 import logo from '../../assets/SoloLogoF_White.png';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { useMessages } from '../../context/MessagesContext';
 
 function NavBar() {
+  const location = useLocation();
+  if (location.pathname.startsWith('/dashboard')) return null;
   const { items } = useCart();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
@@ -20,9 +23,9 @@ function NavBar() {
     <header className="navbar">
       <div className="navbar__top">
         {/**
-         * Ajuste de alineación del bloque logo + texto
-         * - Si quieres mover más a la izquierda/derecha: usa margin-left/padding-left en .navbar__brand
-         * - Alineación interna: display:flex en .navbar__brand con justify-content y align-items
+         * Ajuste de alineaciÃ³n del bloque logo + texto
+         * - Si quieres mover mÃ¡s a la izquierda/derecha: usa margin-left/padding-left en .navbar__brand
+         * - AlineaciÃ³n interna: display:flex en .navbar__brand con justify-content y align-items
          *   por defecto: justify-content: flex-start; align-items: center;
          */}
         <div
@@ -34,10 +37,10 @@ function NavBar() {
         >
           {/**
            * Logo oficial + texto de marca
-           * - Tamaño del logo: ajusta "width" en la clase .logo-image (ej: 45px)
-           * - Separación entre logo y texto: ajusta "gap" en .logo-container (ej: 10px)
-           * - Posición del bloque completo: ajusta margin-left / padding-left en .navbar__brand
-           *   y/o usa display:flex + justify-content / align-items según necesites
+           * - TamaÃ±o del logo: ajusta "width" en la clase .logo-image (ej: 45px)
+           * - SeparaciÃ³n entre logo y texto: ajusta "gap" en .logo-container (ej: 10px)
+           * - PosiciÃ³n del bloque completo: ajusta margin-left / padding-left en .navbar__brand
+           *   y/o usa display:flex + justify-content / align-items segÃºn necesites
            */}
           <div className="logo-container">
             <img className="logo-image" src={logo} alt="Fixsy Parts" />
@@ -146,3 +149,7 @@ function NavBar() {
 }
 
 export default NavBar;
+
+
+
+

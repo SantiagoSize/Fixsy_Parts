@@ -1,6 +1,8 @@
 import React from 'react';
 
-export type Role = 'User' | 'Admin' | 'Support';
+// 🧹 FIXSY CLEANUP: organised structure, no logic changes
+// Roles para persistencia en localStorage
+export type Role = 'Usuario' | 'Admin' | 'Soporte';
 
 export type AuthUser = {
   id: string;
@@ -71,8 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const users = loadUsers();
     const exists = users.some(u => u.email.toLowerCase() === newUser.email.toLowerCase());
     if (exists) return { ok: false, error: 'El email ya está registrado' };
-    const emailLower = newUser.email.toLowerCase();
-    const role: Role = emailLower.includes('admin') ? 'Admin' : emailLower.includes('support') ? 'Support' : 'User';
+    // Asignación automática de rol por dominio
+    const emailLower = newUser.email.trim().toLowerCase();
+    const domain = (emailLower.split('@')[1] || '').trim();
+    const role: Role =
+      domain === 'admin.fixsy.com' ? 'Admin' :
+      domain === 'soporte.fixsy.com' ? 'Soporte' :
+      'Usuario';
     const userToSave: AuthUser = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       nombre: newUser.nombre,

@@ -1,6 +1,10 @@
 /* Fuente global Montserrat (si está instalada en el sistema) */
 html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
+  background-color: #ffffff; /* fondo claro por defecto en toda la app */
 }
 
 body {
@@ -9,7 +13,7 @@ body {
   font-weight: 400; /* Texto general */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #ffffff;
+  background: #ffffff; /* asegurar blanco en páginas generales */
 }
 
 h1, h2, h3 {
@@ -34,3 +38,14 @@ p, span, li, input, button, label {
 .app-main {
   flex: 1;
 }
+
+/* Dashboard edge-to-edge background to avoid white borders */
+/* Nota: el fondo oscuro se aplica solo dentro del Dashboard.
+   Evitamos oscurecer páginas generales (login, registro, home) aquí. */
+
+/* Home: fondo blanco para toda el área de contenido */
+.app-main--home {
+  background: #ffffff;
+}
+
+/* Scroll global habilitado para páginas fuera del dashboard */

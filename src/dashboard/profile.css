@@ -1,0 +1,96 @@
+.fxprofile-panel {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 24px;
+  margin: 0 auto;
+  max-width: 1100px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible; /* evita scroll interno innecesario */
+}
+
+.fxprofile-photo {
+  display: grid;
+  justify-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: transparent; /* neutro, sin bloques blancos extra */
+}
+
+.fxprofile-photo__imgWrapper {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 0 auto;
+  background: #F3F4F6; /* gris claro neutro detrás de la foto */
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 480px) {
+  .fxprofile-photo__imgWrapper { width: 120px; height: 120px; }
+}
+
+.fxprofile-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+  .fxprofile-grid { grid-template-columns: 1fr; }
+}
+
+.fxprofile-grid--twoCols {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .fxprofile-grid--twoCols { grid-template-columns: 1fr; }
+}
+
+/* Variante de una columna para apilar campos (p.ej., teléfonos) */
+.fxprofile-grid--oneCol {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.fxprofile-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 12px 0 20px;
+}
+
+.fxprofile-section {
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 16px 16px 18px;
+}
+
+/* Título de sección con separador inferior */
+.fxprofile-section > h3 {
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+/* Asegurar que inputs ocupen el ancho disponible sin desbordes */
+.fxprofile-panel input,
+.fxprofile-panel textarea,
+.fxprofile-panel button { max-width: 100%; }
+
+/* Borde por cada campo del perfil */
+.fxprofile-field {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+}

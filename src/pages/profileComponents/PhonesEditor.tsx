@@ -20,6 +20,7 @@ export default function PhonesEditor({ phone, landline, onChange }: Props) {
 
   React.useEffect(() => { setMobileNum(extractAfterPrefix(phone)); }, [phone]);
   React.useEffect(() => { setFixedNum(extractAfterPrefix(landline)); }, [landline]);
+  const sanitize8 = (value: string) => (value || '').replace(/\D+/g, '').slice(0, 8);
 
   return (
     <section className="profile-section panel">
@@ -30,9 +31,13 @@ export default function PhonesEditor({ phone, landline, onChange }: Props) {
           <span className="phone-prefix">{BASE_PREFIX}</span>
           <input
             type="tel"
-            placeholder="Ej: 912345678"
+            placeholder="Ej: 12345678"
+            inputMode="numeric"
+            pattern="^[0-9]{0,8}$"
+            maxLength={8}
+            title="Ingrese hasta 8 dígitos"
             value={mobileNum}
-            onChange={(e) => { const val = e.target.value; setMobileNum(val); onChange('phone', `${BASE_PREFIX} ${val}`.trim()); }}
+            onChange={(e) => { const v = sanitize8(e.target.value); setMobileNum(v); onChange('phone', `${BASE_PREFIX} ${v}`.trim()); }}
           />
         </div>
       </div>
@@ -42,9 +47,13 @@ export default function PhonesEditor({ phone, landline, onChange }: Props) {
           <span className="phone-prefix">{BASE_PREFIX}</span>
           <input
             type="tel"
-            placeholder="Ej: 222345678"
+            placeholder="Ej: 12345678"
+            inputMode="numeric"
+            pattern="^[0-9]{0,8}$"
+            maxLength={8}
+            title="Ingrese hasta 8 dígitos"
             value={fixedNum}
-            onChange={(e) => { const val = e.target.value; setFixedNum(val); onChange('landline', `${BASE_PREFIX} ${val}`.trim()); }}
+            onChange={(e) => { const v = sanitize8(e.target.value); setFixedNum(v); onChange('landline', `${BASE_PREFIX} ${v}`.trim()); }}
           />
         </div>
       </div>
