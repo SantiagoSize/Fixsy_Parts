@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   /* Hereda paleta global desde NavBar.css */
   --fixsy-blue: var(--fp-primary);
   --fixsy-orange: var(--fp-accent);
@@ -54,15 +54,15 @@
 
 .home-carousel__image {
   width: 100%;
-  height: 300px;
-  object-fit: cover; /* cubrir completamente el recuadro */
+  height: 340px;
+  object-fit: contain; /* mostrar la imagen completa sin recorte */
   object-position: center; /* mantener centrado al recortar */
-  background: #f2f2f2;
+  background: #fafafa;
   display: block;
   border-radius: 6px;
 }
 @media (min-width: 1024px) {
-  .home-carousel__image { height: 460px; }
+  .home-carousel__image { height: 520px; }
 }
 
 .home-carousel__text {
@@ -138,7 +138,7 @@
 
 .home-best__card:hover .home-best__image { transform: scale(1.03); }
 
-/* Navegación (flechas grandes) */
+/* NavegaciÃ³n (flechas grandes) */
 .home-best__nav {
   position: absolute;
   top: 50%;
@@ -173,7 +173,7 @@
 .home-best__grid.animate-next .home-best__card { animation: best-slide-in-left 300ms ease; }
 .home-best__grid.animate-prev .home-best__card { animation: best-slide-in-right 300ms ease; }
 
-/* Más visitados */
+/* MÃ¡s visitados */
 .mv { border: 1px solid #E5E7EB; border-radius: 12px; padding: 12px; background: #fff; }
 .mv__title { margin: 0 0 8px; color: #2C2A2B; font-size: 18px; font-weight: 800; }
 .mv__empty { color: #2C2A2B; }
@@ -189,3 +189,4 @@
 .mv__price { margin: 0 0 8px; color: #2C2A2B; font-weight: 800; }
 .mv__btn { background: #6B4DFF; color: #fff; border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; }
 .mv__btn:hover { filter: brightness(.98); }
+
