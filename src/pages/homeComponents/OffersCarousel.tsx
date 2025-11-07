@@ -15,7 +15,7 @@ function OffersCarousel(): React.ReactElement {
   React.useEffect(() => {
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % slides.length);
-    }, 3500);
+    }, 7000);
     return () => clearInterval(id);
   }, []);
 
