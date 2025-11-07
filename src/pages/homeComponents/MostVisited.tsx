@@ -58,7 +58,7 @@ export default function MostVisited(): React.ReactElement {
     );
   }
 
-  const sample = pickRandom(items, items.length >= 6 ? 6 : Math.min(4, items.length));
+  const sample = pickRandom(items, items.length >= 3 ? 3 : Math.min(3, items.length));
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'>` +
     `<rect width='100%' height='100%' fill='%23f2f1f2'/>` +
     `<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='18'>Imagen</text>` +
@@ -70,15 +70,15 @@ export default function MostVisited(): React.ReactElement {
       <h2 className="mv__title">Ofertas destacadas</h2>
       <div className="mv__grid">
         {sample.map((p, idx) => (
-          <article key={p.id} className="mv__card">
+          <article key={p.id} className="mv__card" onClick={() => navigate(`/product/${encodeURIComponent(String(p.id))}`)}>
             <div className="mv__imageWrap">
+              <div className="mv__overlay">{p.nombre}</div>
               <img className="mv__image" src={(p.imagen && String(p.imagen).trim().length > 0) ? p.imagen : [body1, body2, body3][idx % 3]} alt={p.nombre} />
             </div>
             <div className="mv__info">
-              <h3 className="mv__name">{p.nombre}</h3>
               <p className="mv__price">$ {Number(p.precio || 0).toLocaleString('es-CL')}</p>
-              <button className="mv__btn" onClick={() => navigate(`/product/${encodeURIComponent(String(p.id))}`)}>
-                Ver producto
+              <button className="mv__btn">
+                Ver detalles
               </button>
             </div>
           </article>
