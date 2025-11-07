@@ -1,4 +1,4 @@
-export type InventoryItem = {
+﻿export type InventoryItem = {
   id: string;
   nombre: string;
   descripcion: string;
@@ -122,3 +122,32 @@ export async function patchInventoryImagesFromCsv(): Promise<void> {
   } catch {}
 }
 
+
+// Sobrescribe las imágenes existentes con las del CSV cuando coinciden por id o nombre
+export async function overwriteInventoryImagesFromCsv(): Promise<void> {
+  try {
+    const url = new URL('../assets/inventario_fixsy_pixabay.csv', import.meta.url).toString();
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const text = await res.text();
+    const csvItems = parseCsvToInventory(text);
+    if (!csvItems.length) return;
+    const byId = new Map<string, string>();
+    const byName = new Map<string, string>();
+    csvItems.forEach(it => {
+      if (it.id) byId.set(String(it.id), it.imagen);
+      if (it.nombre) byName.set(it.nombre.toLowerCase(), it.imagen);
+    });
+    const current = loadInventory();
+    let changed = false;
+    const updated = current.map(it => {
+      const candidate = byId.get(String(it.id)) || byName.get((it.nombre || '').toLowerCase()) || '';
+      if (candidate && candidate !== it.imagen) {
+        changed = true;
+        return { ...it, imagen: candidate };
+      }
+      return it;
+    });
+    if (changed) localStorage.setItem('fixsy_inventory', JSON.stringify(updated));
+  } catch {}
+}

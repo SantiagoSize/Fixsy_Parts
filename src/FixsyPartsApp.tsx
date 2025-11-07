@@ -12,7 +12,7 @@ import { seedItemsOnce, seedPurchasesOnce, seedPurchasesForEmails } from './util
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
-import { seedInventoryFromCsvOnce, patchInventoryImagesFromCsv } from './utils/inventory';
+import { seedInventoryFromCsvOnce, patchInventoryImagesFromCsv, overwriteInventoryImagesFromCsv } from './utils/inventory';
 // Error popup eliminado temporalmente
 
 function AppShell() {
@@ -45,7 +45,7 @@ function FixsyPartsApp() {
     try { ensureDemoUsersGmailPresent(); } catch {}
     // Sembrar inventario desde CSV de assets si está vacío y parchear imágenes faltantes
     try { seedInventoryFromCsvOnce(); } catch {}
-    try { patchInventoryImagesFromCsv(); } catch {}
+    try { patchInventoryImagesFromCsv(); overwriteInventoryImagesFromCsv(); } catch {}
     try { seedItemsOnce(); } catch {}
     try { seedPurchasesOnce(); } catch {}
     try { seedPurchasesForEmails(['lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
