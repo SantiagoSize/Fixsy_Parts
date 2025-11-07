@@ -1,5 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import body1 from '../../assets/Body1.png';
+import body2 from '../../assets/Body2.png';
+import body3 from '../../assets/Body 3.png';
 
 type InvItem = {
   id: string;
@@ -66,10 +69,10 @@ export default function MostVisited(): React.ReactElement {
     <section className="mv">
       <h2 className="mv__title">Ofertas destacadas</h2>
       <div className="mv__grid">
-        {sample.map(p => (
+        {sample.map((p, idx) => (
           <article key={p.id} className="mv__card">
             <div className="mv__imageWrap">
-              <img className="mv__image" src={p.imagen || placeholderSrc} alt={p.nombre} />
+              <img className="mv__image" src={(p.imagen && String(p.imagen).trim().length > 0) ? p.imagen : [body1, body2, body3][idx % 3]} alt={p.nombre} />
             </div>
             <div className="mv__info">
               <h3 className="mv__name">{p.nombre}</h3>
@@ -84,3 +87,4 @@ export default function MostVisited(): React.ReactElement {
     </section>
   );
 }
+

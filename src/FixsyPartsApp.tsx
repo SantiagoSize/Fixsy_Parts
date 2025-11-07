@@ -12,6 +12,7 @@ import { seedItemsOnce, seedPurchasesOnce, seedPurchasesForEmails } from './util
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
+import { seedInventoryFromCsvOnce } from './utils/inventory';
 // Error popup eliminado temporalmente
 
 function AppShell() {
@@ -42,6 +43,8 @@ function FixsyPartsApp() {
     try { pruneUsersToCore(['santiago@admin.fixsy.com','matias@soporte.fixsy.com','lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
     try { ensureCoreAccounts(); } catch {}
     try { ensureDemoUsersGmailPresent(); } catch {}
+    // Sembrar inventario desde CSV de assets si está vacío
+    try { seedInventoryFromCsvOnce(); } catch {}
     try { seedItemsOnce(); } catch {}
     try { seedPurchasesOnce(); } catch {}
     try { seedPurchasesForEmails(['lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
