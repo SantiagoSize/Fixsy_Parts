@@ -14,13 +14,13 @@ export default function Inbox() {
         <p>No tienes mensajes.</p>
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
-          {messages.map(m => (
+          {messages.map((m) => (
             <div key={m.id} style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: '10px 12px', background: '#fff' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <strong>De: {m.from}</strong>
-                <small>{new Date(m.date).toLocaleString()}</small>
+                <strong>De: {m.sender}</strong>
+                <small>{new Date(m.timestamp).toLocaleString()}</small>
               </div>
-              <p style={{ margin: '8px 0' }}>{m.message}</p>
+              <p style={{ margin: '8px 0' }}>{m.body}</p>
               {!m.read && (
                 <button type="button" onClick={() => markRead(m.id)} style={{ background: '#0064CD', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer' }}>Marcar como leído</button>
               )}

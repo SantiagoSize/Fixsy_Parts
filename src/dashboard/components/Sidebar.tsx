@@ -1,10 +1,9 @@
-﻿import React from "react";
+import React from "react";
 import { useAuth } from "../../context/AuthContext";
+import { Role } from "../../types/auth";
 import { DashContext, DashKey } from "../DashboardLayout";
 import logo from "../../assets/SoloLogoF_White.png";
-
-type Props = { role: 'Admin' | 'Soporte'; onLogout: () => void };
-
+type Props = { role: Extract<Role, "Admin" | "Soporte">; onLogout: () => void };
 export default function Sidebar({ role, onLogout }: Props) {
   const { user } = useAuth();
   const ctx = React.useContext(DashContext);
@@ -75,8 +74,6 @@ export default function Sidebar({ role, onLogout }: Props) {
             onClick={() => {
               try { localStorage.setItem('fixsy_dash_key', m.key as any); } catch {}
               setKey(m.key);
-              // Forzar recarga para que otros módulos detecten nuevos datos (fotos, archivos, etc.)
-              window.location.reload();
             }}
           >
             {m.icon ? (<span style={{ fontSize: 20 }}>{m.icon}</span>) : null}

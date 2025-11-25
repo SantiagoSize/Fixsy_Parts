@@ -6,13 +6,10 @@ import Footer from './pages/sharedComponents/Footer';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { MessagesProvider } from './context/MessagesContext';
-import { __seedFixsyMessagesOnce } from './messages/MessagesContext';
-import { seedAuthUsersOnce, seedManagementUsersOnce, setAllAuthPasswords, pruneUsersToCore, seedDemoUsersAndMail, ensureCoreAccounts, ensureSupportToAdminMail, ensureDemoUsersGmailPresent } from './utils/seedUsers';
-import { seedItemsOnce, seedPurchasesOnce, seedPurchasesForEmails } from './utils/seedStore';
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
-import { seedInventoryFromCsvOnce, patchInventoryImagesFromCsv, overwriteInventoryImagesFromCsv } from './utils/inventory';
+import { useInitDemoData } from './utils/initDemoData';
 // Error popup eliminado temporalmente
 
 function AppShell() {
@@ -34,24 +31,8 @@ function AppShell() {
 
 function FixsyPartsApp() {
   const { ToastContainer } = useToast();
-  // Semilla de mensajes para pruebas (solo si estÃ¡ vacÃ­o)
-  React.useEffect(() => {
-    try { __seedFixsyMessagesOnce(); } catch {}
-    try { seedAuthUsersOnce(); } catch {}
-    try { seedManagementUsersOnce(); } catch {}
-    try { setAllAuthPasswords('12345678'); } catch {}
-    try { pruneUsersToCore(['santiago@admin.fixsy.com','matias@soporte.fixsy.com','lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
-    try { ensureCoreAccounts(); } catch {}
-    try { ensureDemoUsersGmailPresent(); } catch {}
-    // Sembrar inventario desde CSV de assets si está vacío y parchear imágenes faltantes
-    try { seedInventoryFromCsvOnce(); } catch {}
-    try { patchInventoryImagesFromCsv(); overwriteInventoryImagesFromCsv(); } catch {}
-    try { seedItemsOnce(); } catch {}
-    try { seedPurchasesOnce(); } catch {}
-    try { seedPurchasesForEmails(['lucas.morales@gmail.com','valentina.rojas@gmail.com','diego.castro@gmail.com']); } catch {}
-    try { seedDemoUsersAndMail(); } catch {}
-    try { ensureSupportToAdminMail(); } catch {}
-  }, []);
+  const ready = useInitDemoData();
+  if (!ready) return <div className="app-loading">Cargando datos de demo...</div>;
   return (
     <AuthProvider>
       <MessagesProvider>

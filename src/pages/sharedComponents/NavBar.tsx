@@ -15,13 +15,15 @@ function NavBar() {
   const { isAuthenticated, logout, user } = useAuth();
   const { unreadCount } = useMessages();
   const [openMenu, setOpenMenu] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const count = items.reduce((sum, it) => sum + it.quantity, 0);
   const unread = user ? unreadCount(user.email) : 0;
   const unreadText = unread > 99 ? '99+' : unread > 0 ? String(unread) : '';
+  const dashboardPath = user?.role === 'Admin' ? '/dashboard/admin' : user?.role === 'Soporte' ? '/dashboard/support' : null;
 
   return (
     <header className="navbar">
-      <div className="navbar__top">
+      <div className="navbar__row">
         {/**
          * Ajuste de alineaciÃ³n del bloque logo + texto
          * - Si quieres mover mÃ¡s a la izquierda/derecha: usa margin-left/padding-left en .navbar__brand
@@ -47,6 +49,18 @@ function NavBar() {
             <span className="logo-text navbar__title">Fixsy Parts</span>
           </div>
         </div>
+        <button
+          className="navbar__hamburger"
+          aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          onClick={() => setIsMenuOpen(v => !v)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </div>
+
+      <div className={`navbar__panel ${isMenuOpen ? 'is-open' : ''}`}>
         <div className="navbar__search">
           <input
             type="search"
@@ -124,7 +138,15 @@ function NavBar() {
                 >
                   Historial de compras
                 </button>
-                {user?.role === 'Support' && (
+                {dashboardPath && (
+                  <button
+                    onClick={() => { setOpenMenu(false); navigate(dashboardPath); }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  >
+                    Dashboard
+                  </button>
+                )}
+                {user?.role === 'Soporte' && (
                   <button
                     onClick={() => { setOpenMenu(false); navigate('/compose'); }}
                     style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
@@ -143,7 +165,6 @@ function NavBar() {
           </div>
         </div>
       </div>
-      
     </header>
   );
 }

@@ -1,4 +1,6 @@
-﻿export type InventoryItem = {
+﻿import { STORAGE_KEYS } from './storageKeys';
+
+export type InventoryItem = {
   id: string;
   nombre: string;
   descripcion: string;
@@ -10,7 +12,7 @@
 
 export function loadInventory(): InventoryItem[] {
   try {
-    const raw = localStorage.getItem('fixsy_inventory');
+    const raw = localStorage.getItem(STORAGE_KEYS.inventory);
     const list = raw ? JSON.parse(raw) as InventoryItem[] : [];
     return Array.isArray(list) ? list : [];
   } catch { return []; }
@@ -25,7 +27,7 @@ export function incrementVisit(id: string) {
     const next = { ...cur, visitas: (cur.visitas || 0) + 1 };
     const out = [...list];
     out[idx] = next;
-    localStorage.setItem('fixsy_inventory', JSON.stringify(out));
+    localStorage.setItem(STORAGE_KEYS.inventory, JSON.stringify(out));
   } catch {}
 }
 
@@ -41,7 +43,7 @@ export async function seedInventoryFromCsvOnce(): Promise<void> {
     if (!res.ok) return;
     const text = await res.text();
     const items = parseCsvToInventory(text);
-    if (items.length) localStorage.setItem('fixsy_inventory', JSON.stringify(items));
+    if (items.length) localStorage.setItem(STORAGE_KEYS.inventory, JSON.stringify(items));
   } catch {}
 }
 
@@ -118,7 +120,7 @@ export async function patchInventoryImagesFromCsv(): Promise<void> {
       }
       return it;
     });
-    if (changed) localStorage.setItem('fixsy_inventory', JSON.stringify(updated));
+    if (changed) localStorage.setItem(STORAGE_KEYS.inventory, JSON.stringify(updated));
   } catch {}
 }
 
@@ -148,6 +150,6 @@ export async function overwriteInventoryImagesFromCsv(): Promise<void> {
       }
       return it;
     });
-    if (changed) localStorage.setItem('fixsy_inventory', JSON.stringify(updated));
+    if (changed) localStorage.setItem(STORAGE_KEYS.inventory, JSON.stringify(updated));
   } catch {}
 }

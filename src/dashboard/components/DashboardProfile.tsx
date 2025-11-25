@@ -1,12 +1,13 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
+import { Role } from "../../types/auth";
 import "../profile.css";
 
 type ProfileData = {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  role: Role;
   profileImage?: string;
   phonePersonal: string;
   phoneLandline?: string;
@@ -65,13 +66,11 @@ const field = (label: string, content: React.ReactNode) => (
 export default function DashboardProfile() {
   const { user } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const roleFromStorage = ((): string => {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')?.role || ''; } catch { return ''; }
-  })();
-  const role = user?.role || roleFromStorage || 'Usuario';
+  const roleFromStorage = (): Role => {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "{}")?.role as Role; } catch { return "Usuario"; }
+  };
+  const role: Role = user?.role || roleFromStorage() || "Usuario";
   const isAllowed = role === 'Admin' || role === 'Soporte';
-
   const storageKey = React.useMemo(() => user ? `fixsy_profile_${user.id}` : 'fixsy_profile_guest', [user?.id]);
   const defaults: ProfileData = React.useMemo(() => ({
     firstName: user?.nombre || '',
@@ -79,7 +78,7 @@ export default function DashboardProfile() {
     email: user?.email || '',
     role,
     profileImage: ((): string | undefined => {
-      try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}')?.profilePic || undefined; } catch { return undefined; }
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "{}")?.profilePic; } catch { return undefined; }
     })(),
     phonePersonal: '',
     phoneLandline: '',

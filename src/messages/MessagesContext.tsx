@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 export type AppMessage = {
   id: string;
@@ -17,7 +18,7 @@ export type AppMessage = {
   timestamp: string; // ISO
 };
 
-const STORAGE_KEY = 'fixsyMessages';
+const STORAGE_KEY = STORAGE_KEYS.messagesMail;
 
 function loadAll(): AppMessage[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) as AppMessage[] : []; } catch { return []; }
@@ -35,6 +36,8 @@ type Ctx = {
   markRead: (id: string, v?: boolean) => void;
   markImportant: (id: string, v?: boolean) => void;
   refresh: () => void; // reload from localStorage (simulated realtime)
+  unreadCount: (email: string) => number;
+  messagesFor: (email: string) => AppMessage[];
 };
 
 export const MessagesContext = React.createContext<Ctx | undefined>(undefined);
@@ -86,13 +89,26 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = React.useCallback(() => setMessages(loadAll()), []);
 
+  const unreadCount = React.useCallback((email: string) => {
+    const low = (email || '').toLowerCase();
+    return messages.filter(m => (m.receiver || '').toLowerCase() === low && !m.read && !m.deleted && !m.archived).length;
+  }, [messages]);
+
+  const messagesFor = React.useCallback((email: string) => {
+    const low = (email || '').toLowerCase();
+    return messages.filter(m => (m.receiver || '').toLowerCase() === low && !m.deleted);
+  }, [messages]);
+
   // Simular recepción en tiempo real leyendo localStorage cada 30s
   React.useEffect(() => {
     const t = setInterval(() => setMessages(loadAll()), 30000);
     return () => clearInterval(t);
   }, []);
 
-  const value = React.useMemo(() => ({ messages, send, update, remove, archive, markRead, markImportant, refresh }), [messages, send, update, remove, archive, markRead, markImportant, refresh]);
+  const value = React.useMemo(
+    () => ({ messages, send, update, remove, archive, markRead, markImportant, refresh, unreadCount, messagesFor }),
+    [messages, send, update, remove, archive, markRead, markImportant, refresh, unreadCount, messagesFor]
+  );
   return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;
 }
 

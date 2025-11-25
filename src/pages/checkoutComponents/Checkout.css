@@ -5,3 +5,19 @@
 .co-name { color: #2C2A2B; }
 .co-qty { color: #2C2A2B; }
 .co-price { color: #0064CD; font-weight: 700; }
+.checkout-form { display: grid; gap: 10px; max-width: 640px; margin-top: 12px; }
+.co-field { display: grid; gap: 4px; }
+.co-field label { font-weight: 600; color: #2C2A2B; }
+.co-field input,
+.co-field select {
+  width: 100%;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.btn-primary { width: 100%; text-align: center; }
+@media (max-width: 640px) {
+  .checkout-item { grid-template-columns: 1fr 1fr; }
+  .co-price { justify-self: end; }
+}

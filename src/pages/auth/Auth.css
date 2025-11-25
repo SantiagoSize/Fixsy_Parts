@@ -63,6 +63,7 @@
 }
 
 .btn-primary:hover { filter: brightness(0.95); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; filter: none; }
 
 .auth-links {
   display: flex;

@@ -1,20 +1,12 @@
 import React from 'react';
+import { Role, SessionUser } from '../types/auth';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 // 🧹 FIXSY CLEANUP: organised structure, no logic changes
-// Roles para persistencia en localStorage
-export type Role = 'Usuario' | 'Admin' | 'Soporte';
-
-export type AuthUser = {
-  id: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  password: string; // demo/localStorage únicamente
-  role: Role;
-};
+export type AuthUser = SessionUser & { password: string }; // demo/localStorage únicamente
 
 type AuthContextValue = {
-  user: Omit<AuthUser, 'password'> | null;
+  user: SessionUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (user: Omit<AuthUser, 'id' | 'role'>) => Promise<{ ok: boolean; error?: string }>;
@@ -23,8 +15,8 @@ type AuthContextValue = {
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
 
-const USERS_KEY = 'fixsy_users';
-const SESSION_KEY = 'fixsy_current_user';
+const USERS_KEY = STORAGE_KEYS.authUsers;
+const SESSION_KEY = STORAGE_KEYS.currentUser;
 
 function loadUsers(): AuthUser[] {
   try {
@@ -39,28 +31,29 @@ function saveUsers(users: AuthUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-function loadSession(): Omit<AuthUser, 'password'> | null {
+function loadSession(): SessionUser | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as Omit<AuthUser, 'password'>) : null;
+    return raw ? (JSON.parse(raw) as SessionUser) : null;
   } catch {
     return null;
   }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<Omit<AuthUser, 'password'> | null>(loadSession());
+  const [user, setUser] = React.useState<SessionUser | null>(loadSession());
 
   const login = React.useCallback(async (email: string, password: string) => {
     const users = loadUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (found) {
-      const sessionUser: Omit<AuthUser, 'password'> = {
+      const sessionUser: SessionUser = {
         id: found.id,
         nombre: found.nombre,
         apellido: found.apellido,
         email: found.email,
         role: found.role,
+        profilePic: found.profilePic,
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
       setUser(sessionUser);
@@ -87,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: newUser.email,
       password: newUser.password,
       role,
+      profilePic: (newUser as any).profilePic || '',
     };
     users.push(userToSave);
     saveUsers(users);

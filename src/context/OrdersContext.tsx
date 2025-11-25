@@ -1,9 +1,10 @@
 import React from 'react';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 export type OrderItem = { productId: number; name: string; quantity: number; price: number };
 export type Order = { id: string; userEmail: string; date: string; items: OrderItem[] };
 
-const ORDERS_KEY = 'fixsy_orders';
+const ORDERS_KEY = STORAGE_KEYS.orders;
 
 function loadOrders(): Order[] { try { const raw = localStorage.getItem(ORDERS_KEY); return raw ? JSON.parse(raw) as Order[] : []; } catch { return []; } }
 function saveOrders(orders: Order[]) { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders)); }

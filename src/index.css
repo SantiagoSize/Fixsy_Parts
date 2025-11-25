@@ -1,3 +1,13 @@
+:root {
+  --bp-sm: 600px;
+  --bp-md: 900px;
+  --bp-lg: 1200px;
+  --color-primary: #6B4DFF;
+  --color-dark: #2C2A2B;
+  --color-border: #E5E7EB;
+  --color-bg: #FFFFFF;
+}
+
 /* Fuente global Montserrat (si está instalada en el sistema) */
 html, body, #root {
   margin: 0;
@@ -37,6 +47,16 @@ p, span, li, input, button, label {
 
 .app-main {
   flex: 1;
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  color: var(--color-dark);
+  background: var(--color-bg);
 }
 
 /* Dashboard edge-to-edge background to avoid white borders */

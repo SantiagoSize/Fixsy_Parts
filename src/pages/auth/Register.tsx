@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { isAuthRoute } from '../../utils/isAuthRoute';
 import getRecaptchaKey from '../../utils/getRecaptchaKey';
+import Alert from '../../components/Alert';
 import './Auth.css';
 
 export default function Register() {
@@ -17,7 +18,9 @@ export default function Register() {
   const [password, setPassword] = React.useState('');
   const [confirm, setConfirm] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<string | null>(null);
   const [recaptchaToken, setRecaptchaToken] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
   const recaptchaRef = React.useRef<ReCAPTCHA | null>(null);
   const siteKey = getRecaptchaKey();
   const shouldUseCaptcha = isAuthRoute(location.pathname);
@@ -25,21 +28,31 @@ export default function Register() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
+    setLoading(true);
     if (!firstName || !lastName || !email || !confirmEmail || !password || !confirm) {
       setError('Completa todos los campos');
+      setLoading(false);
       return;
     }
-    if (!/.+@.+\..+/.test(email)) { setError('Ingresa un email válido'); return; }
-    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) { setError('Los correos no coinciden'); return; }
-    if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); return; }
-    if (password !== confirm) { setError('Las contraseñas no coinciden'); return; }
+    if (!/.+@.+\..+/.test(email)) { setError('Ingresa un email válido'); setLoading(false); return; }
+    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) { setError('Los correos no coinciden'); setLoading(false); return; }
+    if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); setLoading(false); return; }
+    if (password !== confirm) { setError('Las contraseñas no coinciden'); setLoading(false); return; }
     if (shouldUseCaptcha) {
-      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); return; }
-      if (!recaptchaToken) { setError('Debes verificar que no eres un robot para continuar.'); return; }
+      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
+      if (!recaptchaToken) { setError('Debes verificar que no eres un robot.'); setLoading(false); return; }
     }
     const res = await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password });
-    if (!res.ok) { setError(res.error || 'Ocurrió un error'); if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch {}; setRecaptchaToken(null);} return; }
-    navigate('/login');
+    if (!res.ok) {
+      setError(res.error || 'Ocurrió un error');
+      if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch {} setRecaptchaToken(null); }
+      setLoading(false);
+      return;
+    }
+    setSuccess('Cuenta creada correctamente. Te redirigimos al login...');
+    setLoading(false);
+    setTimeout(() => navigate('/login'), 800);
   };
 
   return (
@@ -82,19 +95,20 @@ export default function Register() {
                     onExpired={() => setRecaptchaToken(null)}
                   />
                   {!recaptchaToken && (
-                    <span className="captcha-error">
-                      ⚠️ Debes completar la verificación de seguridad para continuar.
-                    </span>
+                    <Alert type="error" message="Debes completar la verificación de seguridad para continuar." />
                   )}
                 </div>
               ) : (
-                <div className="auth-error" role="alert">Clave reCAPTCHA faltante, contacte al administrador.</div>
+                <Alert type="error" message="Clave reCAPTCHA faltante, contacte al administrador." />
               )}
             </div>
           )}
-          {error && <div className="auth-error" role="alert">{error}</div>}
+          {error && <Alert type="error" message={error} />}
+          {success && <Alert type="success" message={success} />}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={shouldUseCaptcha && !recaptchaToken}>Registrarme</button>
+            <button type="submit" className="btn-primary" disabled={loading || (shouldUseCaptcha && !recaptchaToken)}>
+              {loading ? 'Creando...' : 'Registrarme'}
+            </button>
             <div className="auth-links">
               <span />
               <Link className="auth-link" to="/login">¿Ya tienes cuenta? Inicia sesión</Link>
@@ -105,4 +119,3 @@ export default function Register() {
     </div>
   );
 }
-

@@ -13,13 +13,16 @@
 .cat__empty { padding: 12px; border: 1px solid #E5E7EB; border-radius: 12px; color: #2C2A2B; background: #fff; }
 
 .cat__grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 600px) { .cat__grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) { .cat__grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1200px) { .cat__grid { grid-template-columns: repeat(4, 1fr); } }
 
 .cat__card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; transition: transform .15s ease, box-shadow .2s ease; animation: fade-in .25s ease; }
 .cat__card:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 10px 26px rgba(0,0,0,.12); }
 .cat__card--pulse { animation: pulse .6s ease; }
 
 .cat__imageWrap { width: 100%; height: 180px; background: #fafafa; display: grid; place-items: center; }
+@media (min-width: 600px) { .cat__imageWrap { height: 200px; } }
 @media (min-width: 900px) { .cat__imageWrap { height: 240px; } }
 .cat__image { width: 100%; height: 100%; object-fit: contain; }
 .cat__placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: #6B7280; font-size: 13px; background: #F3F4F6; border: 1px dashed #E5E7EB; border-radius: 10px; }

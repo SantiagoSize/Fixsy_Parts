@@ -7,7 +7,8 @@ export default function PurchaseHistory() {
   const { orders, ordersFor } = useOrders();
   if (!user) return <div style={{ padding: '1rem' }}>Debes iniciar sesión.</div>;
 
-  const list = (user.role === 'Admin' || user.role === 'Support') ? orders : ordersFor(user.email);
+  const isStaff = user.role === 'Admin' || user.role === 'Soporte';
+  const list = isStaff ? orders : ordersFor(user.email);
 
   return (
     <div style={{ maxWidth: 900, margin: '1rem auto', padding: '0 1rem' }}>

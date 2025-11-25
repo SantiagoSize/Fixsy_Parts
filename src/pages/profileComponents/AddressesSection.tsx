@@ -2,8 +2,9 @@ import React from 'react';
 import { useAddresses, Address } from '../../hooks/useAddresses';
 import ModalAddAddress from './ModalAddAddress';
 import { toast } from '../../hooks/useToast';
+import { Role } from '../../types/auth';
 
-type Props = { profileId: string; role?: 'User' | 'Admin' | 'Support' };
+type Props = { profileId: string; role?: Role };
 
 const CHILE_GEODATA: Record<string, Record<string, string[]>> = {
   'Metropolitana de Santiago': { 'Santiago': ['Santiago', 'Providencia', 'Las Condes', 'La Florida'] },
@@ -18,7 +19,7 @@ export default function AddressesSection({ profileId, role }: Props) {
   const { addresses, add, update, remove } = useAddresses(profileId);
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Address | null>(null);
-  const isAdminLike = role === 'Admin' || role === 'Support';
+  const isAdminLike = role === 'Admin' || role === 'Soporte';
 
   // Inline form state for admin/support
   const [adminForm, setAdminForm] = React.useState<Omit<Address, 'id'>>({

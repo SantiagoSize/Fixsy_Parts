@@ -25,15 +25,42 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
-.navbar__top {
-  display: grid;
-  grid-template-columns: 1fr minmax(280px, 720px) 1fr;
+.navbar__row {
+  display: flex;
   align-items: center;
-  column-gap: 1.5rem;
-  min-height: 72px;
+  justify-content: space-between;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  gap: 1rem;
+}
+.navbar__panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0.35rem auto 0;
+}
+.navbar__panel.is-open { display: grid; }
+.navbar__hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid var(--fp-light);
+  background: #fff;
+  cursor: pointer;
+  padding: 10px;
+}
+.navbar__hamburger span {
+  height: 2px;
+  width: 100%;
+  background: var(--fp-dark);
+  border-radius: 999px;
 }
 
 .navbar__brand {
@@ -204,6 +231,27 @@
   /* Mantener relación en móvil */
   .logo-image { height: calc(var(--brand-title-size-mobile) * var(--brand-logo-scale)); }
   .logo-container { gap: var(--brand-gap-mobile); }
+  .navbar__panel {
+    display: none;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .navbar__panel.is-open {
+    display: grid;
+  }
+  .navbar__actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .navbar__hamburger {
+    display: inline-flex;
+  }
+  .navbar__row {
+    align-items: center;
+  }
+  .navbar__search {
+    width: 100%;
+  }
 }
 
 /* Botón de perfil en naranja corporativo */

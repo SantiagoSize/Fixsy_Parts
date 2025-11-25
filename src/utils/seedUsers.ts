@@ -1,7 +1,6 @@
 // Seed initial users for Auth (fixsy_users) and Management (fixsyUsers)
 // Safe to call multiple times; only seeds when empty.
-
-export type Role = 'Usuario' | 'Admin' | 'Soporte';
+import { Role } from '../types/auth';
 import { uuid } from './uuid';
 
 type AuthUser = {

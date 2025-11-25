@@ -1,77 +1,49 @@
 import React from 'react';
-import { useAuth } from './AuthContext';
+import { MessagesProvider as MailMessagesProvider, useMessagesContext, AppMessage } from '../messages/MessagesContext';
 
-export type Message = {
-  id: string;
-  to: string; // email destino
-  from: string; // email origen
-  message: string;
-  date: string; // ISO
-  read: boolean;
-};
-
-const MSG_KEY = 'fixsy_messages';
-
-function loadMessages(): Message[] {
-  try { const raw = localStorage.getItem(MSG_KEY); return raw ? JSON.parse(raw) as Message[] : []; } catch { return []; }
-}
-function saveMessages(msgs: Message[]) { localStorage.setItem(MSG_KEY, JSON.stringify(msgs)); }
-
-type Ctx = {
-  messages: Message[];
+type WrapperCtx = {
+  messages: AppMessage[];
   send: (to: string, body: string) => void;
-  forUser: (email: string) => Message[];
-  markRead: (id: string) => void;
   unreadCount: (email: string) => number;
+  markRead: (id: string, v?: boolean) => void;
+  forUser: (email: string) => AppMessage[];
 };
 
-const MessagesContext = React.createContext<Ctx | undefined>(undefined);
+const WrapperContext = React.createContext<WrapperCtx | undefined>(undefined);
 
 export function MessagesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [messages, setMessages] = React.useState<Message[]>(loadMessages());
+  return (
+    <MailMessagesProvider>
+      <MessagesAdapter>{children}</MessagesAdapter>
+    </MailMessagesProvider>
+  );
+}
 
-  const persist = React.useCallback((updater: (prev: Message[]) => Message[]) => {
-    setMessages(prev => {
-      const next = updater(prev);
-      saveMessages(next);
-      return next;
-    });
-  }, []);
+function MessagesAdapter({ children }: { children: React.ReactNode }) {
+  const { messages, send: sendMail, unreadCount, markRead } = useMessagesContext();
 
   const send = React.useCallback((to: string, body: string) => {
-    const from = user?.email || 'support@fixsy.local';
-    const msg: Message = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-      to,
-      from,
-      message: body,
-      date: new Date().toISOString(),
-      read: false,
-    };
-    persist(prev => [msg, ...prev]);
-  }, [user?.email, persist]);
+    sendMail({ receiver: to, sender: '', subject: '(sin asunto)', body });
+  }, [sendMail]);
 
   const forUser = React.useCallback((email: string) => {
-    return messages.filter(m => m.to.toLowerCase() === email.toLowerCase());
+    const low = (email || '').toLowerCase();
+    return messages.filter(m => (m.receiver || '').toLowerCase() === low && !m.deleted);
   }, [messages]);
 
-  const markRead = React.useCallback((id: string) => {
-    persist(prev => prev.map(m => m.id === id ? { ...m, read: true } : m));
-  }, [persist]);
+  const value = React.useMemo<WrapperCtx>(() => ({
+    messages,
+    send,
+    unreadCount,
+    markRead,
+    forUser,
+  }), [messages, send, unreadCount, markRead, forUser]);
 
-  const unreadCount = React.useCallback((email: string) => {
-    return messages.filter(m => m.to.toLowerCase() === email.toLowerCase() && !m.read).length;
-  }, [messages]);
-
-  const value: Ctx = React.useMemo(() => ({ messages, send, forUser, markRead, unreadCount }), [messages, send, forUser, markRead, unreadCount]);
-
-  return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;
+  return <WrapperContext.Provider value={value}>{children}</WrapperContext.Provider>;
 }
 
 export function useMessages() {
-  const ctx = React.useContext(MessagesContext);
+  const ctx = React.useContext(WrapperContext);
   if (!ctx) throw new Error('useMessages debe usarse dentro de MessagesProvider');
   return ctx;
 }
-

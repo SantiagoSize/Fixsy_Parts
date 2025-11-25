@@ -8,7 +8,7 @@ import './Profile.css';
 import '../profileComponents/ProfilePage.css';
 import { useNavigate } from 'react-router-dom';
 
-// Futuro: aquí se puede condicionar UI según user.role (Admin/Support/User)
+// Futuro: aquí se puede condicionar UI según user.role (Admin/Soporte/Usuario)
 
 export default function Profile() {
   const { user } = useAuth();
@@ -53,7 +53,7 @@ export default function Profile() {
                 <div className="hex-row"><div className="hex-label">Nombre:</div><div className="hex-value">{profile.firstName}</div></div>
                 <div className="hex-row"><div className="hex-label">Apellido:</div><div className="hex-value">{profile.lastName}</div></div>
                 <div className="hex-row"><div className="hex-label">Correo:</div><div className="hex-value">{user.email}</div></div>
-                {user.role !== 'User' && (
+                {user.role !== 'Usuario' && (
                   <div className="hex-row"><div className="hex-label">Rol:</div><div className="hex-value">{user.role === 'Admin' ? 'Admin' : 'Soporte Técnico'}</div></div>
                 )}
               </div>

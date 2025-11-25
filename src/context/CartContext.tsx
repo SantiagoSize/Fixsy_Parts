@@ -1,5 +1,6 @@
 import React from 'react';
 import { toast } from '../hooks/useToast';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 type ProductLike = {
   id: string | number;
@@ -25,7 +26,7 @@ type CartContextValue = {
 const CartContext = React.createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const STORAGE_KEY = 'fixsy_cart';
+  const STORAGE_KEY = STORAGE_KEYS.cart;
   const [items, setItems] = React.useState<CartItem[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);

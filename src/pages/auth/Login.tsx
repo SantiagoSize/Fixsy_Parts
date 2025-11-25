@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { isAuthRoute } from '../../utils/isAuthRoute';
 import getRecaptchaKey from '../../utils/getRecaptchaKey';
+import Alert from '../../components/Alert';
 import './Auth.css';
 
 export default function Login() {
@@ -15,6 +16,7 @@ export default function Login() {
   const [error, setError] = React.useState<string | null>(null);
   const [failedAttempts, setFailedAttempts] = React.useState(0);
   const [recaptchaToken, setRecaptchaToken] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
   const recaptchaRef = React.useRef<ReCAPTCHA | null>(null);
   const siteKey = getRecaptchaKey();
   const shouldUseCaptchaRoute = isAuthRoute(location.pathname);
@@ -33,15 +35,17 @@ export default function Login() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     if (!email || !password) {
       setError('Por favor completa todos los campos');
+      setLoading(false);
       return;
     }
     const emailOk = /.+@.+\..+/.test(email);
-    if (!emailOk) { setError('Ingresa un email válido'); return; }
+    if (!emailOk) { setError('Ingresa un email válido'); setLoading(false); return; }
     if (shouldShowCaptcha) {
-      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); return; }
-      if (!recaptchaToken) { setError('Por seguridad debes verificar que no eres un robot.'); return; }
+      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
+      if (!recaptchaToken) { setError('Por seguridad debes verificar que no eres un robot.'); setLoading(false); return; }
     }
     const ok = await login(email, password);
     if (!ok) {
@@ -51,26 +55,27 @@ export default function Login() {
         try { recaptchaRef.current?.reset(); } catch {}
         setRecaptchaToken(null);
       }
+      setLoading(false);
       return;
     }
-    // Control de acceso por estado (Bloqueado/Suspendido) desde fixsyUsers
     try {
-      const usersRaw = localStorage.getItem('fixsyUsers');
-      const list = usersRaw ? JSON.parse(usersRaw) : [];
+      const raw = localStorage.getItem('fixsyUsers');
+      const list = raw ? JSON.parse(raw) : [];
       const found = Array.isArray(list) ? list.find((u: any) => (u?.email || '').toLowerCase() === email.toLowerCase()) : null;
       if (found) {
         const status = String(found.status || 'Activo');
         if (status === 'Bloqueado') {
           setError('Tu cuenta está bloqueada. Contacta con soporte.');
+          setLoading(false);
           return;
         }
         if (status === 'Suspendido') {
           const until = found.suspensionHasta ? new Date(found.suspensionHasta) : null;
           if (until && new Date() < until) {
             setError(`Tu cuenta está suspendida hasta ${until.toLocaleDateString()}`);
+            setLoading(false);
             return;
           } else {
-            // Reactivar si ya expiró
             found.status = 'Activo';
             found.suspensionHasta = '';
             const next = list.map((u: any) => u.email === found.email ? found : u);
@@ -85,9 +90,10 @@ export default function Login() {
       const raw = localStorage.getItem('fixsy_current_user');
       const s = raw ? JSON.parse(raw) : null;
       const role = s?.role;
-      if (role === 'Admin') { navigate('/dashboard/admin'); return; }
-      if (role === 'Soporte') { navigate('/dashboard/support'); return; }
+      if (role === 'Admin') { navigate('/dashboard/admin'); setLoading(false); return; }
+      if (role === 'Soporte') { navigate('/dashboard/support'); setLoading(false); return; }
     } catch {}
+    setLoading(false);
     navigate('/');
   };
 
@@ -115,17 +121,19 @@ export default function Login() {
                     onExpired={() => setRecaptchaToken(null)}
                   />
                   {!recaptchaToken && (
-                    <div className="auth-error" role="alert">Por seguridad debes verificar que no eres un robot.</div>
+                    <Alert type="error" message="Por seguridad debes verificar que no eres un robot." />
                   )}
                 </div>
               ) : (
-                <div className="auth-error" role="alert">Clave reCAPTCHA faltante, contacte al administrador.</div>
+                <Alert type="error" message="Clave reCAPTCHA faltante, contacte al administrador." />
               )}
             </div>
           )}
-          {error && <div className="auth-error" role="alert">{error}</div>}
+          {error && <Alert type="error" message={error} />}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={shouldShowCaptcha && !recaptchaToken}>Iniciar sesión</button>
+            <button type="submit" className="btn-primary" disabled={loading || (shouldShowCaptcha && !recaptchaToken)}>
+              {loading ? 'Ingresando...' : 'Iniciar sesión'}
+            </button>
             <div className="auth-links">
               <Link className="auth-link" to="/forgot-password">¿Olvidaste tu contraseña?</Link>
               <Link className="auth-link" to="/register">Crear cuenta</Link>

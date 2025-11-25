@@ -15,9 +15,11 @@ import Inbox from '../pages/account/Inbox';
 import ComposeMessage from '../pages/support/ComposeMessage';
 import PurchaseHistory from '../pages/account/PurchaseHistory';
 import Catalogo from '../pages/user/Catalogo';
+import DashboardLayout from '../dashboard/DashboardLayout';
+import AdminHome from '../dashboard/AdminHome';
+import SupportHome from '../dashboard/SupportHome';
+import { PrivateRoute, RoleRoute } from './guards';
 
-// Placeholders hasta que se agreguen las páginas reales
-const CatalogPlaceholder = () => <div style={{ padding: '1rem' }}>Catálogo (en progreso)</div>;
 const NotFoundPlaceholder = () => <div style={{ padding: '1rem' }}>404 - No encontrado</div>;
 
 function AppRoutes(): React.ReactElement {
@@ -27,22 +29,25 @@ function AppRoutes(): React.ReactElement {
       <Route path="/catalog" element={<Catalogo />} />
       <Route path="/cart" element={<CartView />} />
       <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout" element={<PrivateRoute element={<Checkout />} />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
       {/* Dashboard (Admin/Soporte) */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route
+        path="/dashboard"
+        element={<RoleRoute allowed={['Admin', 'Soporte']} element={<DashboardLayout />} />}
+      >
         <Route path="admin" element={<AdminHome />} />
         <Route path="support" element={<SupportHome />} />
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/inbox" element={<Inbox />} />
-      <Route path="/compose" element={<ComposeMessage />} />
-      <Route path="/history" element={<PurchaseHistory />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/inbox" element={<PrivateRoute element={<Inbox />} />} />
+      <Route path="/compose" element={<RoleRoute allowed={['Soporte']} element={<ComposeMessage />} />} />
+      <Route path="/history" element={<PrivateRoute element={<PurchaseHistory />} />} />
+      <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
       <Route path="*" element={<NotFoundPlaceholder />} />
     </Routes>
   );
@@ -50,6 +55,3 @@ function AppRoutes(): React.ReactElement {
 
 export default AppRoutes;
 // 🧹 FIXSY CLEANUP: organised structure, no logic changes
-import DashboardLayout from '../dashboard/DashboardLayout';
-import AdminHome from '../dashboard/AdminHome';
-import SupportHome from '../dashboard/SupportHome';
