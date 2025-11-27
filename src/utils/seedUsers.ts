@@ -2,6 +2,7 @@
 // Safe to call multiple times; only seeds when empty.
 import { Role } from '../types/auth';
 import { uuid } from './uuid';
+import { STORAGE_KEYS } from './storageKeys';
 
 type AuthUser = {
   id: string;
@@ -233,7 +234,7 @@ export function seedDemoUsersAndMail() {
     try { localStorage.setItem(inboxKey(email), JSON.stringify(list)); } catch {}
   };
   // Tickets
-  const TICKETS_PREFIX = 'fixsy_tickets_';
+  const TICKETS_PREFIX = STORAGE_KEYS.ticketsPrefix;
   const loadTicketsFor = (email: string) => {
     try { const raw = localStorage.getItem(TICKETS_PREFIX + email.toLowerCase()); return raw ? JSON.parse(raw) : []; } catch { return []; }
   };

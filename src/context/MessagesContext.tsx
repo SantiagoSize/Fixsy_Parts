@@ -6,6 +6,7 @@ type WrapperCtx = {
   send: (to: string, body: string) => void;
   unreadCount: (email: string) => number;
   markRead: (id: string, v?: boolean) => void;
+  messagesFor: (email: string) => AppMessage[];
   forUser: (email: string) => AppMessage[];
 };
 
@@ -20,7 +21,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
 }
 
 function MessagesAdapter({ children }: { children: React.ReactNode }) {
-  const { messages, send: sendMail, unreadCount, markRead } = useMessagesContext();
+  const { messages, send: sendMail, unreadCount, markRead, messagesFor } = useMessagesContext();
 
   const send = React.useCallback((to: string, body: string) => {
     sendMail({ receiver: to, sender: '', subject: '(sin asunto)', body });
@@ -36,8 +37,9 @@ function MessagesAdapter({ children }: { children: React.ReactNode }) {
     send,
     unreadCount,
     markRead,
+    messagesFor,
     forUser,
-  }), [messages, send, unreadCount, markRead, forUser]);
+  }), [messages, send, unreadCount, markRead, messagesFor, forUser]);
 
   return <WrapperContext.Provider value={value}>{children}</WrapperContext.Provider>;
 }
@@ -47,3 +49,5 @@ export function useMessages() {
   if (!ctx) throw new Error('useMessages debe usarse dentro de MessagesProvider');
   return ctx;
 }
+
+export type { AppMessage } from '../messages/MessagesContext';

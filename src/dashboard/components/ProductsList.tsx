@@ -1,4 +1,5 @@
 import React from "react";
+import { formatPrice, getDisplayPrice } from "../../utils/price";
 
 type Product = {
   id: string;
@@ -7,16 +8,13 @@ type Product = {
   precio: number;
   stock: number;
   imagen?: string;
+  precioOferta?: number;
 };
 
 const STORAGE_KEY = 'fixsy_inventory';
 
 function loadProducts(): Product[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) as Product[] : []; } catch { return []; }
-}
-
-function formatCLP(n: number) {
-  try { return n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }); } catch { return `$${n}`; }
 }
 
 export default function ProductsList() {
@@ -90,37 +88,52 @@ export default function ProductsList() {
         <div style={{ textAlign: 'center', color: '#6B7280' }}>📭 No hay productos cargados en el inventario</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: '#6B7280' }}>❌ No se encontraron productos con ese nombre</div>
-      ) : (
-        <div className="prod-grid">
-          {filtered.map((p) => (
-            <div key={p.id} className="prod-card fade-up">
-              <div className="prod-card__img">
-                {p.imagen ? (
-                  <img
-                    src={p.imagen}
-                    alt={p.nombre}
-                    onError={(e) => {
-                      const el = e.currentTarget as HTMLImageElement;
-                      el.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'320\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'14\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`);
-                    }}
-                  />
-                ) : (
-                  <div className="inv-imgFallback">Imagen no disponible</div>
-                )}
-              </div>
-              <div className="prod-card__body">
-                <div className="prod-card__id">#{p.id}</div>
-                <div className="prod-card__name">{p.nombre}</div>
-                <div className="prod-card__desc" title={p.descripcion}>{p.descripcion}</div>
-                <div className="prod-card__meta">
-                  <span className="prod-card__price">{formatCLP(Number(p.precio || 0))}</span>
-                  <span className="prod-card__stock">Stock: {p.stock}</span>
+          ) : (
+            <div className="prod-grid">
+          {filtered.map((p) => {
+            const displayPrice = getDisplayPrice(p as any);
+            return (
+              <div key={p.id} className="prod-card fade-up">
+                <div className="prod-card__img">
+                  {p.imagen ? (
+                    <img
+                      src={p.imagen}
+                      alt={p.nombre}
+                      onError={(e) => {
+                        const el = e.currentTarget as HTMLImageElement;
+                        el.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'320\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'14\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`);
+                      }}
+                    />
+                  ) : (
+                    <div className="inv-imgFallback">Imagen no disponible</div>
+                  )}
+                </div>
+                <div className="prod-card__body">
+                  <div className="prod-card__id">#{p.id}</div>
+                  <div className="prod-card__name">{p.nombre}</div>
+                  <div className="prod-card__desc" title={p.descripcion}>{p.descripcion}</div>
+                  <div className="prod-card__meta">
+                    <span className="prod-card__price">
+                      {displayPrice.hasDiscount ? (
+                        <span className="price price--with-discount">
+                          <span className="price__original">{formatPrice(displayPrice.original)}</span>
+                          <span className="price__final">{formatPrice(displayPrice.final)}</span>
+                          {displayPrice.discountPercentage && (
+                            <span className="price__badge">-{displayPrice.discountPercentage}%</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="price">{formatPrice(displayPrice.final)}</span>
+                      )}
+                    </span>
+                    <span className="prod-card__stock">Stock: {p.stock}</span>
+                  </div>
                 </div>
               </div>
+            );
+          })}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
       {toast && (<div className="user-toast" role="status" aria-live="polite">{toast}</div>)}
     </div>

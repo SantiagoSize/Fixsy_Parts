@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCTS, type Product } from '../../data/products';
+import ProductItem from '../../components/ProductItem';
 
 function BestProductsComponent(): React.ReactElement {
   const navigate = useNavigate();
@@ -57,24 +58,11 @@ function BestProductsComponent(): React.ReactElement {
 
       <div className={`home-best__grid ${direction ? `animate-${direction}` : ''}`}>
         {visible.map((p: Product) => (
-          <article
-            className="home-best__card"
+          <ProductItem
             key={p.id}
-            role="button"
-            tabIndex={0}
+            product={{ id: p.id, nombre: p.nombre, precio: p.precio, imagen: p.imagen, images: p.images }}
             onClick={() => navigate(`/product/${p.id}`)}
-            onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/product/${p.id}`); }}
-          >
-            <img
-              className="home-best__image"
-              src={p.imagen || placeholderSrc}
-              alt={p.nombre}
-            />
-            <div className="home-best__info">
-              <h3 className="home-best__name">{p.nombre}</h3>
-              <p className="home-best__price">$ {p.precio.toLocaleString('es-CL')}</p>
-            </div>
-          </article>
+          />
         ))}
       </div>
     </section>

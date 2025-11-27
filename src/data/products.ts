@@ -3,9 +3,11 @@ export interface Product {
   nombre: string;
   descripcion: string;
   precio: number;
+  precioOferta?: number;
   stock: number;
   tags: string[];
   imagen?: string; // placeholder por ahora
+  images?: string[];
 }
 
 export const PRODUCTS: Product[] = [

@@ -1,5 +1,7 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
+import { STORAGE_KEYS } from "../../utils/storageKeys";
+import Alert from "../../components/Alert";
 
 type TicketStatus = 'Abierto' | 'En progreso' | 'Cerrado';
 
@@ -13,14 +15,27 @@ type TicketMessage = {
 
 type Ticket = {
   id: string;
-  ownerEmail: string; // email del usuario dueño del ticket
+  ownerEmail: string;
   subject: string;
   status: TicketStatus;
   createdAt: string;
   messages: TicketMessage[];
 };
 
-const TICKETS_PREFIX = 'fixsy_tickets_';
+const responsiveStyles = `
+.tickets-wrap { display: grid; gap: 12px; }
+.tickets-table { width: 100%; border-collapse: collapse; }
+.tickets-table th { background: #F7F7FA; text-align: left; padding: 12px 14px; border-bottom: 1px solid #E5E7EB; }
+.tickets-table td { padding: 12px 14px; border-bottom: 1px solid #F1F5F9; }
+.tickets-table tbody tr:hover { background: #FAFAFF; }
+.tickets-scroll { overflow-x: auto; }
+@media (max-width: 768px) {
+  .tickets-scroll { overflow-x: auto; }
+  .tickets-actions { flex-direction: column; align-items: flex-start; }
+}
+`;
+
+const TICKETS_PREFIX = STORAGE_KEYS.ticketsPrefix;
 
 function loadTicketsFor(email: string): Ticket[] {
   try {
@@ -44,15 +59,17 @@ export default function Tickets() {
   const [view, setView] = React.useState<Ticket | null>(null);
   const [reply, setReply] = React.useState('');
   const [toast, setToast] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   const load = React.useCallback(() => {
-    if (!isSupport) {
-      setAllTickets(loadTicketsFor(email));
-      return;
-    }
-    // Soporte: agregar todos los tickets de todas las cuentas
-    const list: Ticket[] = [];
     try {
+      if (!isSupport) {
+        setAllTickets(loadTicketsFor(email));
+        setError(null);
+        return;
+      }
+      const list: Ticket[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i) || '';
         if (key.startsWith(TICKETS_PREFIX)) {
@@ -60,10 +77,14 @@ export default function Tickets() {
           if (Array.isArray(chunk)) list.push(...chunk);
         }
       }
-    } catch {}
-    // Orden por fecha desc
-    list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    setAllTickets(list);
+      list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      setAllTickets(list);
+      setError(null);
+    } catch {
+      setError('No se pudieron cargar los tickets.');
+    } finally {
+      setLoading(false);
+    }
   }, [email, isSupport]);
 
   React.useEffect(() => { load(); }, [load]);
@@ -79,7 +100,6 @@ export default function Tickets() {
   }, [allTickets, query]);
 
   const setStatus = (t: Ticket, status: TicketStatus) => {
-    // Actualiza en el storage del dueño y refresca
     const owner = t.ownerEmail.toLowerCase();
     const list = loadTicketsFor(owner).map(x => x.id === t.id ? { ...x, status } : x);
     saveTicketsFor(owner, list);
@@ -108,50 +128,56 @@ export default function Tickets() {
   };
 
   return (
-    <div className="user-panel">
+    <div className="user-panel tickets-wrap">
+      <style>{responsiveStyles}</style>
       <h2 style={{ marginTop: 0 }}>Tickets</h2>
       <input className="search-bar" placeholder="Buscar por ID, asunto o email" value={query} onChange={e=>setQuery(e.target.value)} />
 
-      <div className="user-table-wrap">
-        <table className="user-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Correo</th>
-              <th>Asunto</th>
-              <th>Estado</th>
-              <th>Creado</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '16px 0' }}>No hay tickets.</td></tr>
-            ) : filtered.map(t => (
-              <tr key={t.id}>
-                <td style={{ fontFamily: 'monospace' }}>{t.id}</td>
-                <td>{t.ownerEmail}</td>
-                <td>{t.subject}</td>
-                <td><span className={`status ${t.status.toLowerCase()}`}>{t.status}</span></td>
-                <td>{new Date(t.createdAt).toLocaleString()}</td>
-                <td>
-                  <button className="btn-view" onClick={() => setView(t)}>Ver</button>
-                </td>
+      {loading && <div className="user-table-wrap"><div style={{ padding: 12 }}>Cargando tickets...</div></div>}
+      {error && <Alert type="error" message={error} />}
+
+      {!loading && !error && (
+        <div className="user-table-wrap tickets-scroll">
+          <table className="user-table tickets-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Correo</th>
+                <th>Asunto</th>
+                <th>Estado</th>
+                <th>Creado</th>
+                <th>Acción</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '16px 0' }}>No hay tickets.</td></tr>
+              ) : filtered.map(t => (
+                <tr key={t.id}>
+                  <td style={{ fontFamily: 'monospace' }}>{t.id}</td>
+                  <td>{t.ownerEmail}</td>
+                  <td>{t.subject}</td>
+                  <td><span className={`status ${t.status.toLowerCase()}`}>{t.status}</span></td>
+                  <td>{new Date(t.createdAt).toLocaleString()}</td>
+                  <td>
+                    <button className="btn-view" onClick={() => setView(t)}>Ver</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {view && (
         <div className="user-modal-overlay" role="dialog" aria-modal="true" onClick={() => setView(null)}>
           <div className="user-modal" onClick={e=>e.stopPropagation()}>
-            <button className="user-modal__close" onClick={() => setView(null)} aria-label="Cerrar">✖</button>
+            <button className="user-modal__close" onClick={() => setView(null)} aria-label="Cerrar">×</button>
             <h3 style={{ marginTop: 0 }}>Ticket {view.id}</h3>
             <p style={{ margin: 0 }}><b>Correo:</b> {view.ownerEmail}</p>
             <p style={{ margin: 0 }}><b>Asunto:</b> {view.subject}</p>
             <p><b>Estado:</b> {view.status}</p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="tickets-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button onClick={() => setStatus(view, 'Abierto')}>Marcar Abierto</button>
               <button onClick={() => setStatus(view, 'En progreso')}>En progreso</button>
               <button onClick={() => setStatus(view, 'Cerrado')}>Cerrar</button>
@@ -168,7 +194,7 @@ export default function Tickets() {
                   ))}
                 </ul>
               ) : <p>Sin mensajes.</p>}
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                 <input className="search-bar" placeholder="Escribe una respuesta" value={reply} onChange={e=>setReply(e.target.value)} />
                 <button onClick={() => sendReply(view)}>Responder</button>
               </div>
@@ -181,4 +207,3 @@ export default function Tickets() {
     </div>
   );
 }
-

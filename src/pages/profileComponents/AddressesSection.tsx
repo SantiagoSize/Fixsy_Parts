@@ -3,17 +3,13 @@ import { useAddresses, Address } from '../../hooks/useAddresses';
 import ModalAddAddress from './ModalAddAddress';
 import { toast } from '../../hooks/useToast';
 import { Role } from '../../types/auth';
+import { CHILE_REGIONES } from '../../data/chileDpa';
 
 type Props = { profileId: string; role?: Role };
 
-const CHILE_GEODATA: Record<string, Record<string, string[]>> = {
-  'Metropolitana de Santiago': { 'Santiago': ['Santiago', 'Providencia', 'Las Condes', 'La Florida'] },
-  'Valparaíso': { 'Valparaíso': ['Valparaíso', 'Viña del Mar', 'Quilpué'] },
-  'Biobío': { 'Concepción': ['Concepción', 'Talcahuano', 'San Pedro de la Paz'] },
-};
-const REGIONS = Object.keys(CHILE_GEODATA);
-const provincesFor = (region: string) => (CHILE_GEODATA[region] ? Object.keys(CHILE_GEODATA[region]) : []);
-const communesFor = (region: string, province: string) => (CHILE_GEODATA[region]?.[province] || []);
+const regions = CHILE_REGIONES.map(r => r.nombre);
+const provincesFor = (region: string) => CHILE_REGIONES.find(r => r.nombre === region)?.provincias.map(p => p.nombre) || [];
+const communesFor = (region: string, province: string) => CHILE_REGIONES.find(r => r.nombre === region)?.provincias.find(p => p.nombre === province)?.comunas.map(c => c.nombre) || [];
 
 export default function AddressesSection({ profileId, role }: Props) {
   const { addresses, add, update, remove } = useAddresses(profileId);
@@ -21,9 +17,8 @@ export default function AddressesSection({ profileId, role }: Props) {
   const [editing, setEditing] = React.useState<Address | null>(null);
   const isAdminLike = role === 'Admin' || role === 'Soporte';
 
-  // Inline form state for admin/support
   const [adminForm, setAdminForm] = React.useState<Omit<Address, 'id'>>({
-    alias: '', address: '', number: '', comment: '', region: '', province: '', commune: '', postalCode: '', phone: ''
+    alias: '', address: '', number: '', comment: '', region: '', province: '', commune: '', postalCode: '', phone: '',
   });
   const [adminEditing, setAdminEditing] = React.useState(false);
 
@@ -31,7 +26,17 @@ export default function AddressesSection({ profileId, role }: Props) {
     if (isAdminLike) {
       const a = addresses[0];
       if (a) {
-        setAdminForm({ alias: a.alias, address: a.address, number: a.number, comment: a.comment, region: a.region, province: a.province, commune: a.commune, postalCode: a.postalCode, phone: a.phone });
+        setAdminForm({
+          alias: a.alias,
+          address: a.address,
+          number: a.number,
+          comment: a.comment,
+          region: a.region,
+          province: a.province,
+          commune: a.commune,
+          postalCode: a.postalCode,
+          phone: a.phone,
+        });
         setAdminEditing(false);
       } else {
         setAdminForm({ alias: '', address: '', number: '', comment: '', region: '', province: '', commune: '', postalCode: '', phone: '' });
@@ -52,7 +57,7 @@ export default function AddressesSection({ profileId, role }: Props) {
       add(val);
     }
     setOpen(false);
-    toast('Dirección guardada ✅');
+    toast('Dirección guardada.');
   };
 
   const onAdminSave = () => {
@@ -64,23 +69,18 @@ export default function AddressesSection({ profileId, role }: Props) {
     if (addresses[0]) {
       update(addresses[0].id, adminForm);
       setAdminEditing(false);
-      toast('Dirección guardada ✅');
+      toast('Dirección guardada.');
     } else {
       if (addresses.length >= 1) { toast('Solo puedes tener una dirección en este tipo de cuenta.'); return; }
       add(adminForm);
       setAdminEditing(false);
-      toast('Dirección guardada ✅');
+      toast('Dirección guardada.');
     }
   };
 
   return (
-    <section className="profile-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Direcciones</h2>
-        {!isAdminLike && addresses.length > 0 && (
-          <button className="btn-primary" type="button" onClick={() => { setEditing(null); setOpen(true); }}>+ Agregar dirección</button>
-        )}
-      </div>
+    <section className="profile-section addresses-section">
+      <h2 className="addresses-title">Direcciones</h2>
 
       {isAdminLike ? (
         <div className="panel" style={{ display: 'grid', gap: 10 }}>
@@ -89,9 +89,9 @@ export default function AddressesSection({ profileId, role }: Props) {
           <div className="profile-field"><label>Número casa / depto</label><input value={adminForm.number} onChange={e => setAdminForm({ ...adminForm, number: e.target.value })} disabled={!adminEditing} /></div>
           <div className="profile-field"><label>Comentario</label><textarea rows={3} value={adminForm.comment} onChange={e => setAdminForm({ ...adminForm, comment: e.target.value })} disabled={!adminEditing} /></div>
           <div className="profile-field"><label>Región</label>
-            <select value={adminForm.region} onChange={e => { const region = e.target.value; const provs = provincesFor(region); setAdminForm(prev => ({ ...prev, region, province: provs[0] || '', commune: '' })); }} disabled={!adminEditing}>
+            <select value={adminForm.region} onChange={e => { const region = e.target.value; setAdminForm(prev => ({ ...prev, region, province: '', commune: '' })); }} disabled={!adminEditing}>
               <option value="">Seleccione región</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              {regions.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div className="profile-field"><label>Provincia</label>
@@ -117,14 +117,15 @@ export default function AddressesSection({ profileId, role }: Props) {
           </div>
         </div>
       ) : (
-        <>
+        <div className="addresses-content">
+          <div className="addresses-actions">
+            <button className="btn-primary" type="button" onClick={() => { setEditing(null); setOpen(true); }}>+ Agregar dirección</button>
+          </div>
+
           {addresses.length === 0 ? (
-            <>
-              <p style={{ color: '#666', marginBottom: 10 }}>No hay direcciones guardadas</p>
-              <button className="btn-primary" type="button" onClick={() => { setEditing(null); setOpen(true); }}>+ Agregar dirección</button>
-            </>
+            <p className="addresses-empty">No hay direcciones guardadas</p>
           ) : (
-            <div style={{ display: 'grid', gap: 12 }}>
+            <div className="addresses-list">
               {addresses.map(addr => (
                 <div key={addr.id} style={{ border: '1px solid #0064CD', borderRadius: 12, padding: '10px 12px', background: '#fff' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8 }}>
@@ -138,14 +139,14 @@ export default function AddressesSection({ profileId, role }: Props) {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button style={{ background: '#FFC107', color: '#2C2A2B', border: 'none', borderRadius: 10, padding: '6px 10px', cursor: 'pointer' }} type="button" onClick={() => { setEditing(addr); setOpen(true); }}>Editar</button>
-                      <button style={{ background: '#D32F2F', color: '#fff', border: 'none', borderRadius: 10, padding: '6px 10px', cursor: 'pointer' }} type="button" onClick={() => remove(addr.id)}>🗑</button>
+                      <button style={{ background: '#D32F2F', color: '#fff', border: 'none', borderRadius: 10, padding: '6px 10px', cursor: 'pointer' }} type="button" onClick={() => remove(addr.id)}>Eliminar</button>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {!isAdminLike && (

@@ -2,6 +2,7 @@ import React from 'react';
 import type { Address } from '../../hooks/useAddresses';
 import './ModalAddAddress.css';
 import { toast } from '../../hooks/useToast';
+import { CHILE_REGIONES } from '../../data/chileDpa';
 
 type Props = {
   open: boolean;
@@ -10,28 +11,17 @@ type Props = {
   onSave: (value: Omit<Address, 'id'>) => void;
 };
 
-// Datos dependientes (subset práctico)
-const CHILE_GEODATA: Record<string, Record<string, string[]>> = {
-  'Metropolitana de Santiago': {
-    'Santiago': ['Santiago', 'Providencia', 'Las Condes', 'La Florida'],
-  },
-  'Valparaíso': {
-    'Valparaíso': ['Valparaíso', 'Viña del Mar', 'Quilpué'],
-  },
-  'Biobío': {
-    'Concepción': ['Concepción', 'Talcahuano', 'San Pedro de la Paz'],
-  },
-};
+const regions = CHILE_REGIONES.map(r => r.nombre);
 
-const REGIONS = Object.keys(CHILE_GEODATA);
-
-function provincesFor(region: string): string[] {
-  if (!region || !CHILE_GEODATA[region]) return [];
-  return Object.keys(CHILE_GEODATA[region]);
+function provincesFor(regionName: string): string[] {
+  const region = CHILE_REGIONES.find(r => r.nombre === regionName);
+  return region ? region.provincias.map(p => p.nombre) : [];
 }
-function communesFor(region: string, province: string): string[] {
-  if (!region || !province) return [];
-  return CHILE_GEODATA[region]?.[province] || [];
+
+function communesFor(regionName: string, provinceName: string): string[] {
+  const region = CHILE_REGIONES.find(r => r.nombre === regionName);
+  const province = region?.provincias.find(p => p.nombre === provinceName);
+  return province ? province.comunas.map(c => c.nombre) : [];
 }
 
 export default function ModalAddAddress({ open, initial, onClose, onSave }: Props) {
@@ -81,8 +71,7 @@ export default function ModalAddAddress({ open, initial, onClose, onSave }: Prop
   };
 
   const onRegion = (region: string) => {
-    const provs = provincesFor(region);
-    setForm(prev => ({ ...prev, region, province: provs[0] || '', commune: '' }));
+    setForm(prev => ({ ...prev, region, province: '', commune: '' }));
   };
   const onProvince = (province: string) => {
     setForm(prev => ({ ...prev, province, commune: '' }));
@@ -93,7 +82,7 @@ export default function ModalAddAddress({ open, initial, onClose, onSave }: Prop
   const handleSave = () => {
     if (!validate()) return;
     onSave(form);
-    toast('Dirección guardada ✅');
+    toast('Dirección guardada.');
   };
 
   const provs = provincesFor(form.region);
@@ -104,36 +93,46 @@ export default function ModalAddAddress({ open, initial, onClose, onSave }: Prop
       <div className="modal-card animated-in">
         <div className="modal-header">
           <h3>{headerTitle}</h3>
-          <button className="modal-close" onClick={onClose}>✖</button>
+          <button className="modal-close" onClick={onClose}>x</button>
         </div>
         <div className="modal-body">
-          <div className="profile-field"><label>Alias de dirección</label><input value={form.alias} onChange={e => setForm({ ...form, alias: e.target.value })} />{errors.alias && <div className="field-error">{errors.alias}</div>}</div>
-          <div className="profile-field"><label>Dirección</label><input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />{errors.address && <div className="field-error">{errors.address}</div>}</div>
-          <div className="profile-field"><label>Número casa / depto</label><input value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} />{errors.number && <div className="field-error">{errors.number}</div>}</div>
-          <div className="profile-field"><label>Comentario adicional</label><textarea rows={3} value={form.comment} onChange={e => setForm({ ...form, comment: e.target.value })} /></div>
-          <div className="profile-field"><label>Región</label>
-            <select value={form.region} onChange={e => onRegion(e.target.value)}>
-              <option value="">Seleccione región</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            {errors.region && <div className="field-error">{errors.region}</div>}
+          <div className="address-form">
+            <div className="address-form__row">
+              <div className="profile-field address-form__field"><label>Alias de dirección</label><input value={form.alias} onChange={e => setForm({ ...form, alias: e.target.value })} />{errors.alias && <div className="field-error">{errors.alias}</div>}</div>
+              <div className="profile-field address-form__field"><label>Teléfono de contacto</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Ej: 912345678" />{errors.phone && <div className="field-error">{errors.phone}</div>}</div>
+            </div>
+            <div className="address-form__row">
+              <div className="profile-field address-form__field"><label>Dirección</label><input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />{errors.address && <div className="field-error">{errors.address}</div>}</div>
+              <div className="profile-field address-form__field"><label>Número casa / depto</label><input value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} />{errors.number && <div className="field-error">{errors.number}</div>}</div>
+            </div>
+            <div className="address-form__row">
+              <div className="profile-field address-form__field"><label>Región</label>
+                <select value={form.region} onChange={e => onRegion(e.target.value)}>
+                  <option value="">Seleccione región</option>
+                  {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                {errors.region && <div className="field-error">{errors.region}</div>}
+              </div>
+              <div className="profile-field address-form__field"><label>Provincia</label>
+                <select value={form.province} onChange={e => onProvince(e.target.value)} disabled={!form.region}>
+                  <option value="">Seleccione provincia</option>
+                  {provs.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                {errors.province && <div className="field-error">{errors.province}</div>}
+              </div>
+              <div className="profile-field address-form__field"><label>Comuna</label>
+                <select value={form.commune} onChange={e => setForm({ ...form, commune: e.target.value })} disabled={!form.province}>
+                  <option value="">Seleccione comuna</option>
+                  {comms.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {errors.commune && <div className="field-error">{errors.commune}</div>}
+              </div>
+            </div>
+            <div className="address-form__row">
+              <div className="profile-field address-form__field"><label>Código postal</label><input value={form.postalCode} onChange={e => setForm({ ...form, postalCode: e.target.value })} />{errors.postalCode && <div className="field-error">{errors.postalCode}</div>}</div>
+              <div className="profile-field address-form__field"><label>Comentario adicional</label><textarea rows={3} value={form.comment} onChange={e => setForm({ ...form, comment: e.target.value })} /></div>
+            </div>
           </div>
-          <div className="profile-field"><label>Provincia</label>
-            <select value={form.province} onChange={e => onProvince(e.target.value)} disabled={!form.region}>
-              <option value="">Seleccione provincia</option>
-              {provs.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-            {errors.province && <div className="field-error">{errors.province}</div>}
-          </div>
-          <div className="profile-field"><label>Comuna</label>
-            <select value={form.commune} onChange={e => setForm({ ...form, commune: e.target.value })} disabled={!form.province}>
-              <option value="">Seleccione comuna</option>
-              {comms.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            {errors.commune && <div className="field-error">{errors.commune}</div>}
-          </div>
-          <div className="profile-field"><label>Código postal</label><input value={form.postalCode} onChange={e => setForm({ ...form, postalCode: e.target.value })} />{errors.postalCode && <div className="field-error">{errors.postalCode}</div>}</div>
-          <div className="profile-field"><label>Teléfono de contacto</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Ej: 912345678" />{errors.phone && <div className="field-error">{errors.phone}</div>}</div>
         </div>
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onClose}>Cancelar</button>

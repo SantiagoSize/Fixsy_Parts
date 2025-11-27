@@ -1,9 +1,10 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useProfile } from '../../hooks/useProfile';
+import { useProfile, ProfileRecord } from '../../hooks/useProfile';
 import ProfileHeader from '../profileComponents/ProfileHeader';
 import PhonesEditor from '../profileComponents/PhonesEditor';
 import AddressesSection from '../profileComponents/AddressesSection';
+import { Alert } from '../../components/Alert';
 import './Profile.css';
 import '../profileComponents/ProfilePage.css';
 import { useNavigate } from 'react-router-dom';
@@ -26,16 +27,26 @@ export default function Profile() {
     comuna: '',
     postalCode: '',
   });
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const onPickFile = (file: File) => {
     const reader = new FileReader();
+    setSuccessMessage(null);
     setLoadingPic(true);
     reader.onload = () => { setPhoto(String(reader.result || '')); setLoadingPic(false); };
     reader.onerror = () => setLoadingPic(false);
     reader.readAsDataURL(file);
   };
 
-  const onSaveAll = () => save();
+  const handleUpdate = React.useCallback(<K extends keyof ProfileRecord>(k: K, v: ProfileRecord[K]) => {
+    setSuccessMessage(null);
+    update(k, v);
+  }, [update]);
+
+  const onSaveAll = () => {
+    save();
+    setSuccessMessage('Los datos del perfil se guardaron correctamente.');
+  };
   const navigate = useNavigate();
 
   if (!user) return <div className="profile-wrapper"><div className="profile-card"><p>Debes iniciar sesión.</p></div></div>;
@@ -46,6 +57,12 @@ export default function Profile() {
         <ProfileHeader firstName={profile.firstName} photo={profile.profilePic} onPick={onPickFile} loading={loadingPic} />
 
         <div className="profile-main-card">
+          {successMessage && (
+            <div className="profile-alert">
+              <Alert type="success" message={successMessage} />
+            </div>
+          )}
+
           <section className="profile-section">
             <div className="hex-card">
               <h2 className="hex-title">Datos personales</h2>
@@ -60,12 +77,10 @@ export default function Profile() {
             </div>
           </section>
 
-          {null}
-
           <PhonesEditor
             phone={profile.phone}
             landline={profile.landline}
-            onChange={(k, v) => update(k, v)}
+            onChange={(k, v) => handleUpdate(k, v)}
           />
 
           <section className="profile-section panel">

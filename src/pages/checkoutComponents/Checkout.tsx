@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../../context/CartContext';
 import Alert from '../../components/Alert';
+import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './Checkout.css';
 
 function Checkout(): React.ReactElement {
@@ -13,7 +14,10 @@ function Checkout(): React.ReactElement {
   const [success, setSuccess] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
 
-  const total = items.reduce((sum, it) => sum + it.product.precio * it.quantity, 0);
+  const total = items.reduce((sum, it) => {
+    const display = getDisplayPrice(it.product as any);
+    return sum + display.final * it.quantity;
+  }, 0);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,28 +43,28 @@ function Checkout(): React.ReactElement {
           <div key={it.product.id} className="checkout-item">
             <span className="co-name">{it.product.nombre}</span>
             <span className="co-qty">x{it.quantity}</span>
-            <span className="co-price">$ {(it.product.precio * it.quantity).toLocaleString('es-CL')}</span>
+            <span className="co-price">{formatPrice(getDisplayPrice(it.product as any).final * it.quantity)}</span>
           </div>
         ))}
       </div>
-      <p>Total estimado: $ {total.toLocaleString('es-CL')}</p>
+      <p>Total estimado: {formatPrice(total)}</p>
 
       <form className="checkout-form" onSubmit={onSubmit}>
         <div className="co-field">
           <label htmlFor="name">Nombre completo</label>
-          <input id="name" value={name} onChange={e => setName(e.target.value)} />
+          <input id="name" className="form-input" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div className="co-field">
           <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+          <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
         </div>
         <div className="co-field">
           <label htmlFor="address">Dirección</label>
-          <input id="address" value={address} onChange={e => setAddress(e.target.value)} />
+          <input id="address" className="form-input" value={address} onChange={e => setAddress(e.target.value)} />
         </div>
         <div className="co-field">
           <label htmlFor="payment">Método de pago</label>
-          <select id="payment" value={payment} onChange={e => setPayment(e.target.value)}>
+          <select id="payment" className="form-input" value={payment} onChange={e => setPayment(e.target.value)}>
             <option value="tarjeta">Tarjeta</option>
             <option value="transferencia">Transferencia</option>
             <option value="efectivo">Efectivo</option>
@@ -68,7 +72,7 @@ function Checkout(): React.ReactElement {
         </div>
         {error && <Alert type="error" message={error} />}
         {success && <Alert type="success" message={success} />}
-        <button type="submit" className="btn-primary" disabled={loading}>
+        <button type="submit" className="btn-primary form-button" disabled={loading}>
           {loading ? 'Procesando...' : 'Confirmar compra'}
         </button>
       </form>

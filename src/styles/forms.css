@@ -1,0 +1,30 @@
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #0064CD;
+  box-shadow: 0 0 0 3px rgba(0, 100, 205, 0.12);
+}
+
+.form-error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.form-success {
+  color: #0f766e;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.form-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

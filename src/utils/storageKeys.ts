@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   messagesSimple: 'fixsy_messages',
   messagesMail: 'fixsyMessages',
   inboxPrefix: 'fixsy_inbox_', // require concatenation with email lowercased
+  ticketsPrefix: 'fixsy_tickets_', // dashboard tickets + contacto
   purchases: 'fixsy_orders_history',
   items: 'fixsy_items',
   dashKey: 'fixsy_dash_key',

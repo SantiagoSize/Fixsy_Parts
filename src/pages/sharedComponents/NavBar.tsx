@@ -1,10 +1,9 @@
-﻿import './NavBar.css';
+import './NavBar.css';
 import logo from '../../assets/SoloLogoF_White.png';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useLocation } from 'react-router-dom';
 import { useMessages } from '../../context/MessagesContext';
 
 function NavBar() {
@@ -15,21 +14,20 @@ function NavBar() {
   const { isAuthenticated, logout, user } = useAuth();
   const { unreadCount } = useMessages();
   const [openMenu, setOpenMenu] = React.useState(false);
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
   const count = items.reduce((sum, it) => sum + it.quantity, 0);
   const unread = user ? unreadCount(user.email) : 0;
   const unreadText = unread > 99 ? '99+' : unread > 0 ? String(unread) : '';
   const dashboardPath = user?.role === 'Admin' ? '/dashboard/admin' : user?.role === 'Soporte' ? '/dashboard/support' : null;
+  const goCatalog = () => navigate('/catalogo');
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    goCatalog();
+  };
 
   return (
     <header className="navbar">
-      <div className="navbar__row">
-        {/**
-         * Ajuste de alineaciÃ³n del bloque logo + texto
-         * - Si quieres mover mÃ¡s a la izquierda/derecha: usa margin-left/padding-left en .navbar__brand
-         * - AlineaciÃ³n interna: display:flex en .navbar__brand con justify-content y align-items
-         *   por defecto: justify-content: flex-start; align-items: center;
-         */}
+      <div className="navbar__bar">
         <div
           className="navbar__brand"
           onClick={() => navigate('/')}
@@ -37,43 +35,31 @@ function NavBar() {
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter') navigate('/'); }}
         >
-          {/**
-           * Logo oficial + texto de marca
-           * - TamaÃ±o del logo: ajusta "width" en la clase .logo-image (ej: 45px)
-           * - SeparaciÃ³n entre logo y texto: ajusta "gap" en .logo-container (ej: 10px)
-           * - PosiciÃ³n del bloque completo: ajusta margin-left / padding-left en .navbar__brand
-           *   y/o usa display:flex + justify-content / align-items segÃºn necesites
-           */}
           <div className="logo-container">
             <img className="logo-image" src={logo} alt="Fixsy Parts" />
-            <span className="logo-text navbar__title">Fixsy Parts</span>
+            <div className="logo-text-stack">
+              <span className="logo-text-top">Fixsy</span>
+              <span className="logo-text-bottom">Parts</span>
+            </div>
           </div>
         </div>
-        <button
-          className="navbar__hamburger"
-          aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-          onClick={() => setIsMenuOpen(v => !v)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
 
-      <div className={`navbar__panel ${isMenuOpen ? 'is-open' : ''}`}>
-        <div className="navbar__search">
+        <form className="navbar__search" onSubmit={handleSearchSubmit} role="search">
           <input
             type="search"
             placeholder="Buscar repuestos..."
             aria-label="Buscar repuestos"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-          <button type="button" className="search-button" aria-label="Buscar">
+          <button type="submit" className="search-button" aria-label="Buscar">
             <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" fill="none" strokeWidth="1.8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </button>
-        </div>
+        </form>
+
         <div className="navbar__actions">
           <button
             className="icon-button cart-button"
@@ -86,7 +72,7 @@ function NavBar() {
               <circle cx="17" cy="20" r="1.8" fill="currentColor" />
             </svg>
             {count > 0 && (
-              <span className="cart-badge" aria-label={`${count} artículos en el carrito`}>
+              <span className="cart-badge" aria-label={`${count} articulos en el carrito`}>
                 {count}
               </span>
             )}
@@ -99,7 +85,7 @@ function NavBar() {
                 if (!isAuthenticated) {
                   navigate('/login');
                 } else {
-                  setOpenMenu(v => !v);
+                  setOpenMenu((v) => !v);
                 }
               }}
             >
@@ -109,7 +95,7 @@ function NavBar() {
               </svg>
             </button>
             {!!unread && (
-              <span className="profile-msg-badge" aria-label={`${unread} mensajes no leídos`}>{unreadText}</span>
+              <span className="profile-msg-badge" aria-label={`${unread} mensajes no leidos`}>{unreadText}</span>
             )}
             {isAuthenticated && openMenu && (
               <div
@@ -158,7 +144,7 @@ function NavBar() {
                   onClick={() => { setOpenMenu(false); logout(); navigate('/'); }}
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#b91c1c' }}
                 >
-                  Cerrar sesión
+                  Cerrar sesion
                 </button>
               </div>
             )}
@@ -170,7 +156,3 @@ function NavBar() {
 }
 
 export default NavBar;
-
-
-
-

@@ -33,15 +33,15 @@ export default function ComposeMessage() {
       <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
         <div>
           <label>Para (email)</label>
-          <input value={to} onChange={e => setTo(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1px solid #D1D5DB' }} />
+          <input className="form-input" value={to} onChange={e => setTo(e.target.value)} />
         </div>
         <div>
           <label>Mensaje</label>
-          <textarea value={msg} onChange={e => setMsg(e.target.value)} rows={4} style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1px solid #D1D5DB' }} />
+          <textarea className="form-input" value={msg} onChange={e => setMsg(e.target.value)} rows={4} style={{ resize: 'vertical' }} />
         </div>
         {err && <Alert type="error" message={err} />}
         {ok && <Alert type="success" message={ok} />}
-        <button className="btn-primary" type="submit" disabled={loading}>
+        <button className="btn-primary form-button" type="submit" disabled={loading}>
           {loading ? 'Enviando...' : 'Enviar'}
         </button>
       </form>

@@ -7,6 +7,7 @@ import { UserTable } from "./user/UserTable";
 import { UserDetailModal } from "./user/UserDetailModal";
 import { UserMessagesBox } from "./user/UserMessagesBox";
 import { UserPurchasesBox } from "./user/UserPurchasesBox";
+import { formatPrice, getDisplayPrice } from "../../utils/price";
 
 const MGMT_KEY = STORAGE_KEYS.mgmtUsers;
 const AUTH_KEY = STORAGE_KEYS.authUsers;
@@ -38,7 +39,7 @@ function loadInbox(email: string): InboxMessage[] {
 function PurchaseDetailOverlay({ userId, idCompra, onClose }: { userId: string; idCompra: string; onClose: () => void }) {
   const compra = React.useMemo(() => loadCompras().find((c: any) => String((c as any).idUsuario) === String(userId) && (c as any).idCompra === idCompra), [userId, idCompra]);
   const items = React.useMemo(() => (compra as any)?.items || [], [compra]);
-  const subtotal = items.reduce((s: number, it: any) => s + (it.precio || 0), 0);
+  const subtotal = items.reduce((s: number, it: any) => s + (getDisplayPrice(it || { precio: 0 }).final || 0), 0);
   const total = (compra as any)?.total || subtotal;
   return (
     <div className="user-modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
@@ -52,13 +53,13 @@ function PurchaseDetailOverlay({ userId, idCompra, onClose }: { userId: string; 
                 <div><b>{it.nombre}</b></div>
                 <div style={{ color: '#6b7280' }}>{it.descripcion}</div>
               </div>
-              <div>${it.precio}</div>
+              <div className="price">{formatPrice(getDisplayPrice(it || { precio: 0 }).final || 0)}</div>
             </div>
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 12 }}>
-          <div><b>Subtotal:</b> ${subtotal}</div>
-          <div><b>Total:</b> ${total}</div>
+          <div><b>Subtotal:</b> {formatPrice(subtotal)}</div>
+          <div><b>Total:</b> {formatPrice(total)}</div>
         </div>
       </div>
     </div>

@@ -46,3 +46,28 @@
   overflow-y: auto;
   max-height: 140px;
 }
+
+.address-form {
+  width: 100%;
+  max-width: 720px;
+  display: grid;
+  gap: 10px;
+}
+
+.address-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.address-form__field {
+  flex: 1;
+  min-width: 180px;
+}
+
+.address-form__field input,
+.address-form__field select,
+.address-form__field textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

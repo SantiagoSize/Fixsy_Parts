@@ -1,12 +1,16 @@
 import React from "react";
+import { Alert } from "../../components/Alert";
+import { formatPrice, getDisplayPrice } from "../../utils/price";
 
 type ProductRow = {
   id: string;
   nombre: string;
   descripcion: string;
   precio: number;
+  precioOferta?: number;
   stock: number;
   imagen: string;
+  images?: string[];
 };
 
 const STORAGE_KEY = 'fixsy_inventory';
@@ -16,6 +20,29 @@ function loadInventory(): ProductRow[] {
 }
 function saveInventory(list: ProductRow[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
+}
+
+const MIN_DIMENSION = 200;
+
+function parseImages(value: string): string[] {
+  if (!value) return [];
+  return value.split('|').map(v => v.trim()).filter(Boolean);
+}
+
+function validateImageDimensions(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (img.naturalWidth < MIN_DIMENSION || img.naturalHeight < MIN_DIMENSION) {
+        reject(new Error('small'));
+      } else {
+        resolve();
+      }
+    };
+    img.onerror = () => reject(new Error('load'));
+    img.src = url;
+  });
 }
 
 function parseCsv(text: string): ProductRow[] {
@@ -35,7 +62,7 @@ function parseCsv(text: string): ProductRow[] {
   const iDesc = idx('descripcion');
   const iPrecio = idx('precio');
   const iStock = idx('stock');
-  const iImagen = idx('imagen');
+    const iImagen = idx('imagen');
   const out: ProductRow[] = [];
   for (let li = 1; li < lines.length; li++) {
     const row = csvSplit(lines[li]);
@@ -83,6 +110,7 @@ export default function InventoryCsvUpload() {
   const [preview, setPreview] = React.useState<ProductRow | null>(null);
   const [toast, setToast] = React.useState('');
   const [errors, setErrors] = React.useState<string[]>([]);
+  const [alertMessage, setAlertMessage] = React.useState('');
   const fileRef = React.useRef<HTMLInputElement | null>(null);
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +123,7 @@ export default function InventoryCsvUpload() {
   const onUpload = () => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const text = String(reader.result || '');
         const rows = parseCsv(text);
@@ -108,22 +136,49 @@ export default function InventoryCsvUpload() {
           if (!r.descripcion) rowErrors.push(`Línea ${line}: descripción vacía`);
           if (!(Number.isFinite(r.precio) && r.precio >= 0)) rowErrors.push(`Línea ${line}: precio inválido (${r.precio})`);
           if (!Number.isInteger(r.stock) || r.stock < 0) rowErrors.push(`Línea ${line}: stock inválido (${r.stock})`);
-          if (!r.imagen) rowErrors.push(`Línea ${line}: imagen (URL) vacía`);
-          else {
-            try { new URL(r.imagen); } catch { rowErrors.push(`Línea ${line}: URL de imagen inválida`); }
-          }
+          const urls = parseImages(r.imagen);
+          if (!urls.length) rowErrors.push(`Línea ${line}: imagen (URL) vacía`);
+          urls.forEach(u => { try { new URL(u); } catch { rowErrors.push(`Línea ${line}: URL de imagen inválida`); } });
         });
         if (rows.length === 0) rowErrors.push('El archivo no contiene filas de productos.');
         if (rowErrors.length) {
           setErrors(rowErrors);
+          setAlertMessage(rowErrors[0] || '');
           setParsedCount(0);
           setToast('Corrige el CSV antes de subir.');
           setTimeout(() => setToast(''), 2500);
           return; // no guardar
         }
+
+        // Validar dimensiones mínimas
+        const dimensionErrors: string[] = [];
+        await Promise.all(rows.map(async (r, idx) => {
+          const urls = parseImages(r.imagen);
+          for (const url of urls) {
+            try {
+              await validateImageDimensions(url);
+            } catch {
+              dimensionErrors.push(`Línea ${idx + 2}: La imagen es demasiado pequeña. Debe tener al menos 200x200 píxeles.`);
+              break;
+            }
+          }
+        }));
+        if (dimensionErrors.length) {
+          setErrors(dimensionErrors);
+          setAlertMessage('La imagen es demasiado pequeña. Debe tener al menos 200x200 píxeles.');
+          setParsedCount(0);
+          setToast('Corrige las imágenes (200x200 px mínimo).');
+          setTimeout(() => setToast(''), 2500);
+          return;
+        }
+
         setErrors([]);
+        setAlertMessage('');
         setParsedCount(rows.length);
-        const merged = [...rows];
+        const merged = rows.map(r => {
+          const imgs = parseImages(r.imagen);
+          return { ...r, images: imgs, imagen: imgs[0] || '' };
+        });
         setItems(merged);
         saveInventory(merged);
         setToast('✅ Productos cargados con éxito');
@@ -131,6 +186,7 @@ export default function InventoryCsvUpload() {
       } catch (err: any) {
         const msg = (err && err.message) ? String(err.message) : "Error al procesar el CSV. Verifica columnas (id,nombre,descripcion,precio,stock,imagen) y formato.";
         setErrors([msg]);
+        setAlertMessage(msg);
         setToast('Error al procesar el CSV (verifica columnas y formato)');
         setTimeout(() => setToast(''), 2000);
       }
@@ -144,8 +200,6 @@ export default function InventoryCsvUpload() {
     setParsedCount(0);
   };
 
-  const formatCLP = (n: number) => n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div className="card" style={{ display: 'grid', gap: 12, justifyItems: 'center', textAlign: 'center' }}>
@@ -154,6 +208,7 @@ export default function InventoryCsvUpload() {
           Sube un archivo .csv con las columnas: id, nombre, descripcion, precio, stock, imagen.<br/>
           Cada fila representa un producto. Las imágenes deben ser enlaces (URLs válidas).
         </p>
+        {alertMessage && <Alert type="error" message={alertMessage} />}
         <div className="inv-actions">
           <input ref={fileRef} type="file" accept=".csv" onChange={onPick} style={{ display: 'none' }} />
           <button className="btn-inv btn-secondary" onClick={() => fileRef.current?.click()}>Seleccionar archivo</button>
@@ -179,53 +234,83 @@ export default function InventoryCsvUpload() {
       {/* Grid */}
       {items.length > 0 && (
         <div className="inv-grid">
-          {items.map(p => (
-            <div key={p.id} className="inv-card" onClick={() => setPreview(p)}>
-              <div className="inv-imgWrap">
-                {p.imagen ? (
-                  <img src={p.imagen} alt={p.nombre} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'320\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'14\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`); }} />
-                ) : (
-                  <div className="inv-imgFallback">Imagen no disponible</div>
-                )}
-              </div>
-              <div className="inv-body">
-                <div className="inv-name">{p.nombre}</div>
-                <div className="inv-desc">{p.descripcion}</div>
-                <div className="inv-meta">
-                  <span className="inv-price">{formatCLP(p.precio)}</span>
-                  <span className="inv-stock">Stock: {p.stock}</span>
+          {items.map(p => {
+            const displayPrice = getDisplayPrice(p as any);
+            return (
+              <div key={p.id} className="inv-card" onClick={() => setPreview(p)}>
+                <div className="inv-imgWrap">
+                  {p.imagen ? (
+                    <img src={p.imagen} alt={p.nombre} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'320\' height=\'200\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'14\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`); }} />
+                  ) : (
+                    <div className="inv-imgFallback">Imagen no disponible</div>
+                  )}
+                </div>
+                <div className="inv-body">
+                  <div className="inv-name">{p.nombre}</div>
+                  <div className="inv-desc">{p.descripcion}</div>
+                  <div className="inv-meta">
+                    <span className="inv-price">
+                      {displayPrice.hasDiscount ? (
+                        <span className="price price--with-discount">
+                          <span className="price__original">{formatPrice(displayPrice.original)}</span>
+                          <span className="price__final">{formatPrice(displayPrice.final)}</span>
+                          {displayPrice.discountPercentage && (
+                            <span className="price__badge">-{displayPrice.discountPercentage}%</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="price">{formatPrice(displayPrice.final)}</span>
+                      )}
+                    </span>
+                    <span className="inv-stock">Stock: {p.stock}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal preview */}
-      {preview && (
-        <div className="user-modal-overlay" role="dialog" aria-modal="true" onClick={() => setPreview(null)}>
-          <div className="user-modal" onClick={(e)=>e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>{preview.nombre}</h3>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div className="inv-imgWrap" style={{ maxHeight: 360 }}>
-                {preview.imagen ? (
-                  <img src={preview.imagen} alt={preview.nombre} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'360\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'16\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`); }} />
-                ) : (
-                  <div className="inv-imgFallback">Imagen no disponible</div>
-                )}
-              </div>
-              <div>{preview.descripcion}</div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span className="inv-price">{formatCLP(preview.precio)}</span>
-                <span className="inv-stock">Stock: {preview.stock}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn-view" onClick={() => setPreview(null)}>Cerrar</button>
+      {preview && (() => {
+        const previewDisplay = getDisplayPrice(preview as any);
+        return (
+          <div className="user-modal-overlay" role="dialog" aria-modal="true" onClick={() => setPreview(null)}>
+            <div className="user-modal" onClick={(e)=>e.stopPropagation()}>
+              <h3 style={{ marginTop: 0 }}>{preview.nombre}</h3>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div className="inv-imgWrap" style={{ maxHeight: 360 }}>
+                  {preview.imagen ? (
+                    <img src={preview.imagen} alt={preview.nombre} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'360\'><rect width=\'100%\' height=\'100%\' fill=\'#E5E7EB\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Montserrat, sans-serif\' font-size=\'16\' fill=\'#6B7280\'>Imagen no disponible</text></svg>`); }} />
+                  ) : (
+                    <div className="inv-imgFallback">Imagen no disponible</div>
+                  )}
+                </div>
+                <div>{preview.descripcion}</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span className="inv-price">
+                    {previewDisplay.hasDiscount ? (
+                      <span className="price price--with-discount">
+                        <span className="price__original">{formatPrice(previewDisplay.original)}</span>
+                        <span className="price__final">{formatPrice(previewDisplay.final)}</span>
+                        {previewDisplay.discountPercentage && (
+                          <span className="price__badge">-{previewDisplay.discountPercentage}%</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="price">{formatPrice(previewDisplay.final)}</span>
+                    )}
+                  </span>
+                  <span className="inv-stock">Stock: {preview.stock}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button className="btn-view" onClick={() => setPreview(null)}>Cerrar</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {toast && (<div className="user-toast" role="status" aria-live="polite">{toast}</div>)}
     </div>

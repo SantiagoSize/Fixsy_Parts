@@ -4,6 +4,7 @@
   --fp-dark: #2C2A2B;
   --fp-light: #F2F1F2;
 }
+@import '../../styles/forms.css';
 
 .auth-wrapper {
   max-width: 560px;

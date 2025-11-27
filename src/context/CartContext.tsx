@@ -7,8 +7,10 @@ type ProductLike = {
   nombre: string;
   descripcion?: string;
   precio: number;
+  precioOferta?: number;
   stock: number;
   imagen?: string;
+  images?: string[];
 };
 
 export type CartItem = { product: ProductLike; quantity: number };
@@ -40,6 +42,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items]);
 
   const addToCart = React.useCallback((product: ProductLike, quantity = 1) => {
+    if (quantity < 1) return;
+    if (product.stock < 1) {
+      toast('No hay stock disponible para este producto');
+      return;
+    }
     setItems(prev => {
       const idx = prev.findIndex(ci => String(ci.product.id) === String(product.id));
       if (idx >= 0) {

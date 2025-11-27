@@ -195,3 +195,40 @@
   font-weight: 700;
   color: #2C2A2B;
 }
+
+.profile-alert {
+  margin-bottom: 12px;
+}
+
+.addresses-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addresses-title {
+  margin: 0;
+}
+
+.addresses-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addresses-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.addresses-list {
+  display: grid;
+  gap: 12px;
+}
+
+.addresses-empty {
+  color: #666;
+  margin: 0;
+}

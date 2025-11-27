@@ -1,5 +1,5 @@
 /* Sidebar + main panel styling for Fixsy Dashboard */
-/* 🧹 FIXSY CLEANUP: organised structure, no logic changes */
+/* FIXSY CLEANUP: organised structure, no logic changes */
 
 .fxdash {
   display: grid;
@@ -65,7 +65,7 @@
 .fxdash__logout button { width: 100%; background: #ef4444; color: #fff; border: none; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
 .fxdash__logout button:hover { background: #dc2626; }
 
-.fxdash__main { background: #ffffff; color: #1F2937; display: flex; flex-direction: column; height: 100vh;\n  min-height: 100svh; overflow: hidden; margin-left: 260px; width: calc(100vw - 260px); }
+.fxdash__main { background: #ffffff; color: #1F2937; display: flex; flex-direction: column; height: 100vh; min-height: 100svh; overflow: hidden; margin-left: 260px; width: calc(100vw - 260px); }
 .fxdash__topbar { width: 100%; height: 90px; display: grid; place-items: center; color: #FFFFFF; font-weight: 800; border: none; position: sticky; top: 0; left: 0; z-index: 10; font-size: 26px; letter-spacing: 0.3px; margin: 0; }
 .fxdash__content { padding: 24px; height: calc(100vh - 90px); overflow-y: auto; background: #ffffff; }
 

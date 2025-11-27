@@ -5,6 +5,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { isAuthRoute } from '../../utils/isAuthRoute';
 import getRecaptchaKey from '../../utils/getRecaptchaKey';
 import Alert from '../../components/Alert';
+import { STORAGE_KEYS } from '../../utils/storageKeys';
 import './Auth.css';
 
 export default function Login() {
@@ -59,7 +60,7 @@ export default function Login() {
       return;
     }
     try {
-      const raw = localStorage.getItem('fixsyUsers');
+      const raw = localStorage.getItem(STORAGE_KEYS.mgmtUsers);
       const list = raw ? JSON.parse(raw) : [];
       const found = Array.isArray(list) ? list.find((u: any) => (u?.email || '').toLowerCase() === email.toLowerCase()) : null;
       if (found) {
@@ -79,7 +80,7 @@ export default function Login() {
             found.status = 'Activo';
             found.suspensionHasta = '';
             const next = list.map((u: any) => u.email === found.email ? found : u);
-            localStorage.setItem('fixsyUsers', JSON.stringify(next));
+            localStorage.setItem(STORAGE_KEYS.mgmtUsers, JSON.stringify(next));
           }
         }
       }
@@ -87,7 +88,7 @@ export default function Login() {
 
     setFailedAttempts(0);
     try {
-      const raw = localStorage.getItem('fixsy_current_user');
+      const raw = localStorage.getItem(STORAGE_KEYS.currentUser);
       const s = raw ? JSON.parse(raw) : null;
       const role = s?.role;
       if (role === 'Admin') { navigate('/dashboard/admin'); setLoading(false); return; }
@@ -104,11 +105,11 @@ export default function Login() {
         <form className="auth-form" onSubmit={onSubmit}>
           <div className="auth-field">
             <label htmlFor="email">Email</label>
-            <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="password">Contraseña</label>
-            <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input id="password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           {shouldShowCaptcha && (
             <div className="captcha-container">
@@ -129,9 +130,9 @@ export default function Login() {
               )}
             </div>
           )}
-          {error && <Alert type="error" message={error} />}
+          {error && <div className="form-error" role="alert">{error}</div>}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={loading || (shouldShowCaptcha && !recaptchaToken)}>
+            <button type="submit" className="btn-primary form-button" disabled={loading || (shouldShowCaptcha && !recaptchaToken)}>
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
             <div className="auth-links">

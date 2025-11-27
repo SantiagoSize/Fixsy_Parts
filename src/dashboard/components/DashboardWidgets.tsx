@@ -1,22 +1,23 @@
 import React from "react";
+import { STORAGE_KEYS } from "../../utils/storageKeys";
 
 type Ticket = { id: string; ownerEmail: string; subject: string; status: string; createdAt: string };
 
 function loadUsersCount() {
-  try { const raw = localStorage.getItem('fixsy_users'); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.length : 0; } catch { return 0; }
+  try { const raw = localStorage.getItem(STORAGE_KEYS.authUsers); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.length : 0; } catch { return 0; }
 }
 function loadCustomersCount() {
-  try { const raw = localStorage.getItem('fixsy_users'); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.filter((u:any)=>String(u.role)==='Usuario').length : 0; } catch { return 0; }
+  try { const raw = localStorage.getItem(STORAGE_KEYS.authUsers); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.filter((u:any)=>String(u.role)==='Usuario').length : 0; } catch { return 0; }
 }
 function loadInventoryCount() {
-  try { const raw = localStorage.getItem('fixsy_inventory'); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.length : 0; } catch { return 0; }
+  try { const raw = localStorage.getItem(STORAGE_KEYS.inventory); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list.length : 0; } catch { return 0; }
 }
 function loadTicketsAll(): Ticket[] {
   const out: Ticket[] = [];
   try {
     for (let i=0;i<localStorage.length;i++) {
       const k = localStorage.key(i) || '';
-      if (k.startsWith('fixsy_tickets_')) {
+      if (k.startsWith(STORAGE_KEYS.ticketsPrefix)) {
         const arr = JSON.parse(localStorage.getItem(k) || '[]');
         if (Array.isArray(arr)) out.push(...arr);
       }

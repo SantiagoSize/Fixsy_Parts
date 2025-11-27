@@ -2,7 +2,7 @@ import React from 'react';
 import './Catalogo.css';
 import { useCart } from '../../context/CartContext';
 import { toast } from '../../hooks/useToast';
-import { ProductCard, CatalogProduct } from '../../components/ProductCard';
+import ProductItem, { CatalogProduct } from '../../components/ProductItem';
 import { ProductModal } from '../../components/ProductModal';
 
 const INVENTORY_KEY = 'fixsy_inventory';
@@ -11,7 +11,12 @@ function readInventory(): CatalogProduct[] {
   try {
     const raw = localStorage.getItem(INVENTORY_KEY);
     const list = raw ? (JSON.parse(raw) as CatalogProduct[]) : [];
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) return [];
+    return list.map((item) => {
+      const images = Array.isArray(item.images) ? item.images.filter(Boolean) : (item.imagen ? [item.imagen] : []);
+      const imagen = images[0] || '';
+      return { ...item, images, imagen };
+    });
   } catch {
     return [];
   }
@@ -21,7 +26,6 @@ export default function Catalogo(): React.ReactElement {
   const { addToCart } = useCart();
   const [items, setItems] = React.useState<CatalogProduct[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [justAddedId, setJustAddedId] = React.useState<string | null>(null);
   const [view, setView] = React.useState<CatalogProduct | null>(null);
 
   React.useEffect(() => {
@@ -39,11 +43,9 @@ export default function Catalogo(): React.ReactElement {
 
   const onAdd = (p: CatalogProduct) => {
     addToCart(
-      { id: p.id as any, nombre: p.nombre, descripcion: p.descripcion, precio: p.precio, stock: p.stock, imagen: p.imagen } as any,
+      { id: p.id as any, nombre: p.nombre, descripcion: p.descripcion, precio: p.precio, stock: p.stock, imagen: p.imagen, images: p.images } as any,
       1
     );
-    setJustAddedId(String(p.id));
-    window.setTimeout(() => setJustAddedId(null), 900);
     try { toast('Producto agregado al carrito'); } catch {}
   };
 
@@ -56,12 +58,15 @@ export default function Catalogo(): React.ReactElement {
 
       <div className="cat__grid">
         {items.map((p) => (
-          <ProductCard
+          <ProductItem
             key={p.id}
             product={p}
-            onAdd={onAdd}
-            onView={setView}
-            highlight={justAddedId === String(p.id)}
+            actions={(
+              <>
+                <button className="product-btn product-btn--primary" onClick={() => onAdd(p)}>Añadir al carrito</button>
+                <button className="product-btn product-btn--dark" onClick={() => setView(p)}>Ver</button>
+              </>
+            )}
           />
         ))}
       </div>

@@ -62,27 +62,27 @@ export default function Register() {
         <form className="auth-form" onSubmit={onSubmit}>
           <div className="auth-field">
             <label htmlFor="firstName">Nombres</label>
-            <input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input id="firstName" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="lastName">Apellidos</label>
-            <input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} />
+            <input id="lastName" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="email">Email</label>
-            <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="confirmEmail">Confirmar email</label>
-            <input id="confirmEmail" type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} />
+            <input id="confirmEmail" className="form-input" type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="password">Contraseña</label>
-            <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input id="password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="confirm">Confirmar contraseña</label>
-            <input id="confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+            <input id="confirm" className="form-input" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
           </div>
           {shouldUseCaptcha && (
             <div className="captcha-container">
@@ -103,10 +103,10 @@ export default function Register() {
               )}
             </div>
           )}
-          {error && <Alert type="error" message={error} />}
-          {success && <Alert type="success" message={success} />}
+          {error && <div className="form-error" role="alert">{error}</div>}
+          {success && <div className="form-success" role="status">{success}</div>}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary" disabled={loading || (shouldUseCaptcha && !recaptchaToken)}>
+            <button type="submit" className="btn-primary form-button" disabled={loading || (shouldUseCaptcha && !recaptchaToken)}>
               {loading ? 'Creando...' : 'Registrarme'}
             </button>
             <div className="auth-links">

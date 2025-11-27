@@ -1,0 +1,126 @@
+.product-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  transition: transform 120ms ease, box-shadow 160ms ease;
+}
+.product-card--catalog {
+  width: 100%;
+  min-height: 300px;
+}
+.product-card--compact {
+  flex-direction: row;
+  align-items: center;
+  min-height: 110px;
+  gap: 12px;
+}
+.product-card--clickable { cursor: pointer; }
+.product-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+
+.product-image-wrap {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.product-image-wrap--regular {
+  width: 100%;
+  height: 190px;
+}
+.product-image-wrap--small {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+}
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.product-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.product-price {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.product-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product-actions .product-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 150ms ease;
+}
+.product-actions .product-btn:hover { transform: scale(1.02); }
+.product-btn--primary { background: #6B4DFF; color: #fff; }
+.product-btn--dark { background: #111827; color: #fff; }
+.product-btn--ghost { background: #f3f4f6; color: #111827; border: 1px solid #e5e7eb; }
+
+@media (max-width: 599px) {
+  .product-image-wrap--regular { height: 180px; }
+}
+
+.price {
+  font-weight: 600;
+}
+
+.price--with-discount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.price__original {
+  text-decoration: line-through;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.price__final {
+  color: #e65100;
+  font-weight: 700;
+}
+
+.price__badge {
+  background: #e65100;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}

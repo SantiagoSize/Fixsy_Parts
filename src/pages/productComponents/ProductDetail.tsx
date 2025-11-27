@@ -1,16 +1,21 @@
-﻿import React from 'react';
+import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { toast } from '../../hooks/useToast';
+import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './ProductDetail.css';
 
-type InvItem = { id: string; nombre: string; descripcion: string; precio: number; stock: number; imagen: string };
+type InvItem = { id: string; nombre: string; descripcion: string; precio: number; precioOferta?: number; stock: number; imagen?: string; images?: string[] };
 
 function readInventory(): InvItem[] {
   try {
     const raw = localStorage.getItem('fixsy_inventory');
     const list = raw ? JSON.parse(raw) as InvItem[] : [];
-    return Array.isArray(list) ? list : [];
+    if (!Array.isArray(list)) return [];
+    return list.map((it) => {
+      const imgs = Array.isArray(it.images) ? it.images.filter(Boolean) : (it.imagen ? [it.imagen] : []);
+      return { ...it, images: imgs, imagen: imgs[0] || it.imagen };
+    });
   } catch { return []; }
 }
 
@@ -20,9 +25,26 @@ function ProductDetail(): React.ReactElement {
   const product: InvItem | undefined = id ? inv.find(p => String(p.id) === String(id)) : undefined;
   const navigate = useNavigate();
   const { addToCart, items } = useCart();
+  const displayPrice = product ? getDisplayPrice(product as any) : null;
+
+  const images = React.useMemo(() => {
+    if (!product) return [];
+    const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+    if (list.length === 0 && product.imagen) list.push(product.imagen);
+    return list;
+  }, [product]);
+
+  const [current, setCurrent] = React.useState(0);
+  const hasMultiple = images.length > 1;
+
+  React.useEffect(() => {
+    if (!hasMultiple) return;
+    const idTimer = window.setInterval(() => setCurrent((idx) => (idx + 1) % images.length), 4500);
+    return () => window.clearInterval(idTimer);
+  }, [hasMultiple, images.length]);
 
   if (!product) {
-    return <div className="pd-container">⚠️ Datos del producto no disponibles.</div>;
+    return <div className="pd-container">Datos del producto no disponibles.</div>;
   }
 
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'>` +
@@ -35,37 +57,62 @@ function ProductDetail(): React.ReactElement {
   const inCartQty = items.find(ci => String(ci.product.id) === String(product.id))?.quantity ?? 0;
   const available = Math.max(0, product.stock - inCartQty);
 
-  // AÃ±adir al carrito: mostrar alerta si no hay stock suficiente
+  // Añadir al carrito: mostrar alerta si no hay stock suficiente
   const handleAdd = () => {
     if (available < 1) {
       alert('No hay stock disponible para este producto');
       return;
     }
-    addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen } as any, 1);
-    try { toast('✅ Producto añadido al carrito'); } catch {}
+    addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen, images: product.images } as any, 1);
+    try { toast('Producto añadido al carrito'); } catch {}
   };
 
   // Comprar ahora: avanzar siempre, sin alertas
   const handleBuyNow = () => {
     if (available >= 1) {
-      addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen } as any, 1);
+      addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen, images: product.images } as any, 1);
     }
     navigate('/checkout');
   };
+
+  const goPrev = () => setCurrent((idx) => (idx - 1 + images.length) % images.length);
+  const goNext = () => setCurrent((idx) => (idx + 1) % images.length);
+
+  const currentSrc = images[current] || placeholderSrc;
 
   return (
     <section className="pd-container">
       <div className="pd-grid">
         <div className="pd-image">
-          <img src={product.imagen || placeholderSrc} alt={product.nombre} />
+          <div className="pd-image__wrap">
+            <img src={currentSrc} alt={product.nombre} />
+            {hasMultiple && (
+              <>
+                <button className="pd-nav pd-nav--prev" onClick={goPrev} aria-label="Anterior">‹</button>
+                <button className="pd-nav pd-nav--next" onClick={goNext} aria-label="Siguiente">›</button>
+              </>
+            )}
+          </div>
         </div>
         <div className="pd-info">
           <h1 className="pd-title">{product.nombre}</h1>
           <p className="pd-desc">{product.descripcion}</p>
-          <p className="pd-price">$ {product.precio.toLocaleString('es-CL')}</p>
+          <div className="pd-price">
+            {displayPrice?.hasDiscount ? (
+              <div className="price price--with-discount">
+                <span className="price__original">{formatPrice(displayPrice.original)}</span>
+                <span className="price__final">{formatPrice(displayPrice.final)}</span>
+                {displayPrice.discountPercentage && (
+                  <span className="price__badge">-{displayPrice.discountPercentage}%</span>
+                )}
+              </div>
+            ) : (
+              <div className="price">{formatPrice(displayPrice?.final || product.precio)}</div>
+            )}
+          </div>
           <p className="pd-stock">Stock: {product.stock} unid.</p>
           <div className="pd-actions">
-            <button className="pd-btn add" onClick={handleAdd}>AÃ±adir al carrito</button>
+            <button className="pd-btn add" onClick={handleAdd}>Añadir al carrito</button>
             <button className="pd-btn buy" onClick={handleBuyNow}>Comprar ahora</button>
           </div>
         </div>
