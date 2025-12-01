@@ -9,6 +9,7 @@ import { MessagesProvider } from './context/MessagesContext';
 import { MessagesProvider as MailMessagesProvider } from './messages/MessagesContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
+import { useCartNotification } from './hooks/useCartNotification';
 import { useInitDemoData } from './utils/initDemoData';
 import { ResponsiveProvider } from './context/ResponsiveContext';
 // Error popup eliminado temporalmente
@@ -18,6 +19,7 @@ function AppShell() {
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isHome = location.pathname === '/';
   const { ToastContainer } = useToast();
+  const { CartNotificationContainer } = useCartNotification();
   return (
     <div className="app-container container-fluid d-flex flex-column min-vh-100 p-0">
       <NavBar />
@@ -26,6 +28,7 @@ function AppShell() {
       </main>
       {!isDashboard && <Footer />}
       <ToastContainer />
+      <CartNotificationContainer />
     </div>
   );
 }

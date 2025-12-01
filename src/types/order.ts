@@ -14,8 +14,10 @@ export type OrderRequestDTO = {
   userName: string;
   status?: string;
   subtotal: number;
+  iva?: number;
   shippingCost?: number;
   total?: number;
+  totalItems?: number;
   shippingAddress: string;
   shippingRegion: string;
   shippingComuna: string;
@@ -43,8 +45,10 @@ export type OrderResponseDTO = {
   userName: string;
   status: string;
   subtotal: number;
+  iva?: number;
   shippingCost: number;
   total: number;
+  totalItems?: number;
   shippingAddress: string;
   shippingRegion: string;
   shippingComuna: string;

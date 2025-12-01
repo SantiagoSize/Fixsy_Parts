@@ -2,6 +2,7 @@ import React from 'react';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
 import { CatalogProduct } from '../ProductItem';
 import { getProductImages, getProductPlaceholder } from '../../utils/productImages';
+import { buildProductImageUrl } from '../../utils/api';
 import placeholderProduct from '../../assets/placeholder-product.png';
 
 export type CatalogCardVariant = 'grid' | 'list';
@@ -31,14 +32,41 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
   const hoverTimer = React.useRef<number | null>(null);
 
   const images = React.useMemo(() => {
+    // Intentar obtener imágenes procesadas
     const list = getProductImages(product);
-    const main = product.imageUrl ? [product.imageUrl] : [];
-    const merged = [...main, ...list].filter(Boolean);
-    return merged.length ? merged : [];
+    if (list.length > 0) {
+      return list;
+    }
+    
+    // Si no hay imágenes procesadas, intentar con imageUrl o imagen directamente
+    const rawImage = product.imageUrl || product.imagen || (product as any).image;
+    if (rawImage && typeof rawImage === 'string' && rawImage.trim()) {
+      let imagePath = rawImage.trim();
+      
+      // Si ya es URL completa, usarla
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return [imagePath];
+      }
+      
+      // Si empieza con /images/, construir URL completa
+      if (imagePath.startsWith('/images/')) {
+        return [buildProductImageUrl(imagePath)];
+      }
+      
+      // Si empieza con / pero no es /images/, podría ser otra ruta
+      if (imagePath.startsWith('/')) {
+        return [buildProductImageUrl(imagePath)];
+      }
+      
+      // Si es solo un nombre de archivo, agregar /images/
+      return [buildProductImageUrl(`/images/${imagePath}`)];
+    }
+    
+    return [];
   }, [product]);
 
   const placeholder = React.useMemo(() => getProductPlaceholder(product.nombre), [product.nombre]);
-  const imageSrc = images[0] || product.imageUrl || placeholderProduct || placeholder;
+  const imageSrc = images[0] || placeholderProduct || placeholder;
   const displayPrice = getDisplayPrice(product as any);
   const hasOffer = Boolean(product.isOffer || displayPrice.hasDiscount);
   const isAvailable = (product.isActive ?? true) && (product.stock ?? 0) > 0;

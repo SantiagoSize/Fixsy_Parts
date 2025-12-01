@@ -34,9 +34,50 @@ function CartView(): React.ReactElement {
     return sum + unit * it.quantity;
   }, 0);
 
-  const shippingAddress: ShippingAddress | null = addresses[0]
-    ? { region: addresses[0].region, provincia: addresses[0].province, comuna: addresses[0].commune }
-    : null;
+  const [selectedAddressId, setSelectedAddressId] = React.useState<string | null>(null);
+  const [guestAddress, setGuestAddress] = React.useState<ShippingAddress | null>(null);
+  const [guestSurveyOpen, setGuestSurveyOpen] = React.useState(!user);
+  const [guestForm, setGuestForm] = React.useState({
+    address: '',
+    region: '',
+    province: '',
+    commune: '',
+  });
+  const [guestError, setGuestError] = React.useState<string | null>(null);
+
+  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
+  const mapToShippingAddress = (addr: typeof addresses[number]): ShippingAddress => ({
+    region: addr.region,
+    provincia: addr.province,
+    comuna: addr.commune,
+  });
+
+  React.useEffect(() => {
+    if (addresses.length === 0) {
+      setSelectedAddressId(null);
+      return;
+    }
+    setSelectedAddressId((prev) => {
+      if (prev && addresses.some((addr) => addr.id === prev)) {
+        return prev;
+      }
+      return addresses[0].id;
+    });
+  }, [addresses]);
+
+  React.useEffect(() => {
+    if (user) {
+      setGuestSurveyOpen(false);
+      return;
+    }
+    if (!guestAddress) {
+      setGuestSurveyOpen(true);
+    }
+  }, [user, guestAddress]);
+
+  const shippingAddress: ShippingAddress | null = user
+    ? (selectedAddress ? mapToShippingAddress(selectedAddress) : null)
+    : guestAddress;
   const shippingEstimate = shippingAddress ? estimateShipping(shippingAddress, subtotal) : null;
   const shippingPrice = shippingEstimate?.price ?? 0;
   const netSubtotal = subtotal;
@@ -44,6 +85,25 @@ function CartView(): React.ReactElement {
   const total = netSubtotal + iva + shippingPrice;
   const totalItems = cartProducts.reduce((acc, item) => acc + item.cantidad, 0);
   const goAddresses = () => navigate('/profile');
+
+  const handleGuestFormChange = (field: keyof typeof guestForm, value: string) => {
+    setGuestForm((prev) => ({ ...prev, [field]: value }));
+    setGuestError(null);
+  };
+
+  const handleGuestSurveySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestForm.region.trim() || !guestForm.province.trim() || !guestForm.commune.trim()) {
+      setGuestError('Completa región, provincia y comuna para calcular el envío.');
+      return;
+    }
+    setGuestAddress({
+      region: guestForm.region.trim(),
+      provincia: guestForm.province.trim(),
+      comuna: guestForm.commune.trim(),
+    });
+    setGuestSurveyOpen(false);
+  };
 
   const handleMinus = (p: CartItemData) => {
     if (p.cantidad > 1) updateQuantity(p.id, p.cantidad - 1);
@@ -107,13 +167,59 @@ function CartView(): React.ReactElement {
             <div className="summary-row__value">
               <div>{shippingEstimate ? (shippingPrice === 0 ? 'Gratis' : formatPrice(shippingPrice)) : 'Por estimar'}</div>
               {shippingEstimate && (
-                <div className="shipping-extra">
-                  Chilexpress (estimado) - {shippingEstimate.label} - {shippingEstimate.eta}
+                <div className="shipping-extra shipping-extra--center">
+                  <span>{shippingEstimate.label}</span>
+                  <span>{shippingEstimate.eta}</span>
                 </div>
               )}
             </div>
           </div>
-          {!shippingEstimate && <button className="address-btn" type="button" onClick={goAddresses}>Agregar direccion de envio</button>}
+          {!shippingEstimate && (
+            user
+              ? <button className="address-btn" type="button" onClick={goAddresses}>Agregar dirección de envío</button>
+              : <button className="address-btn" type="button" onClick={() => setGuestSurveyOpen(true)}>Completar dirección</button>
+          )}
+
+          {!user && guestAddress && (
+            <div className="summary-row summary-row--note">
+              <div className="summary-row__label">Invitado</div>
+              <div className="summary-row__value">
+                {`${guestAddress.region} · ${guestAddress.comuna}`}
+                <button className="address-btn" type="button" onClick={() => setGuestSurveyOpen(true)}>
+                  Cambiar dirección
+                </button>
+              </div>
+            </div>
+          )}
+
+          {user && addresses.length > 0 && (
+            <div className="address-selection">
+              <h3>Dirección de envío</h3>
+              <div className="address-selection__list">
+                {addresses.map((addr) => (
+                  <label
+                    key={addr.id}
+                    className={`address-selection__option ${selectedAddressId === addr.id ? 'is-active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="shipping-address"
+                      value={addr.id}
+                      checked={selectedAddressId === addr.id}
+                      onChange={() => setSelectedAddressId(addr.id)}
+                    />
+                    <div>
+                      <strong>{addr.alias || 'Sin alias'}</strong>
+                      <p>{addr.address} {addr.number}</p>
+                      <p>{addr.region} · {addr.province} · {addr.commune}</p>
+                      {addr.comment && <p className="address-selection__note">{addr.comment}</p>}
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <button className="address-btn" type="button" onClick={goAddresses}>Gestionar direcciones</button>
+            </div>
+          )}
 
           <div className="summary-row summary-row--total">
             <div className="summary-row__label">Total</div>
@@ -123,6 +229,58 @@ function CartView(): React.ReactElement {
           <button className="pay-btn" onClick={() => navigate('/checkout')}>Pagar</button>
         </aside>
       </div>
+
+      {guestSurveyOpen && !user && (
+        <div className="guest-survey" role="dialog" aria-modal="true">
+          <div className="guest-survey__backdrop" />
+          <div className="guest-survey__panel">
+            <h3>Cuéntanos dónde quieres recibir el pedido</h3>
+            <p>Es una mini encuesta para calcular tu envío estimado.</p>
+            <form onSubmit={handleGuestSurveySubmit} className="guest-survey__form">
+              <label>
+                Dirección completa
+                <input
+                  type="text"
+                  value={guestForm.address}
+                  onChange={(e) => handleGuestFormChange('address', e.target.value)}
+                  placeholder="Calle, número, piso"
+                />
+              </label>
+              <label>
+                Región
+                <input
+                  type="text"
+                  value={guestForm.region}
+                  onChange={(e) => handleGuestFormChange('region', e.target.value)}
+                  placeholder="Ej. Metropolitana"
+                />
+              </label>
+              <label>
+                Provincia
+                <input
+                  type="text"
+                  value={guestForm.province}
+                  onChange={(e) => handleGuestFormChange('province', e.target.value)}
+                  placeholder="Ej. Santiago"
+                />
+              </label>
+              <label>
+                Comuna
+                <input
+                  type="text"
+                  value={guestForm.commune}
+                  onChange={(e) => handleGuestFormChange('commune', e.target.value)}
+                  placeholder="Ej. Providencia"
+                />
+              </label>
+              {guestError && <p className="guest-survey__error">{guestError}</p>}
+              <div className="guest-survey__actions">
+                <button className="pay-btn" type="submit">Guardar y continuar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -202,6 +202,16 @@
   text-align: right;
 }
 
+.summary-row--note .summary-row__value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+.summary-row--note .summary-row__value .address-btn {
+  padding: 0.35rem 0.7rem;
+}
+
 .summary-row--total {
   border-top: 1px solid #e5e7eb;
   padding-top: 8px;
@@ -219,6 +229,44 @@
   background: #F2F1F2;
   color: #2C2A2B;
   cursor: pointer;
+}
+
+.address-selection {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.65rem;
+}
+.address-selection h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.address-selection__list {
+  display: grid;
+  gap: 0.5rem;
+}
+.address-selection__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.5rem;
+  cursor: pointer;
+  background: #fff;
+  align-items: start;
+}
+.address-selection__option input {
+  margin-top: 0.4rem;
+}
+.address-selection__option.is-active {
+  border-color: #0064CD;
+  box-shadow: 0 4px 12px rgba(0,100,205,0.15);
+}
+.address-selection__note {
+  font-size: 0.8rem;
+  color: #555;
+  margin: 0;
 }
 
 .pay-btn {
@@ -263,6 +311,15 @@
   margin-top: -4px;
   font-size: 0.8rem;
   color: #555;
+}
+
+.shipping-extra--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
 }
 
 .summary-items {
@@ -312,6 +369,59 @@
   border-radius: 12px;
   padding: 2px 6px;
   font-size: 0.75rem;
+}
+
+.guest-survey {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+}
+.guest-survey__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.guest-survey__panel {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  width: min(90vw, 420px);
+  z-index: 61;
+  display: grid;
+  gap: 0.6rem;
+}
+.guest-survey__form {
+  display: grid;
+  gap: 0.75rem;
+}
+.guest-survey__form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #2c2a2b;
+}
+.guest-survey__form input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #d6deed;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+}
+.guest-survey__error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+.guest-survey__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (max-width: 640px) {

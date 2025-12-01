@@ -108,7 +108,7 @@ function ProductDetail(): React.ReactElement {
       images: product.images,
       sku: (product as any).sku,
     }, qty);
-    try { toast('Producto agregado al carrito'); } catch {}
+    // La notificación del carrito se muestra automáticamente desde CartContext
   };
 
   const handleBuyNow = () => {

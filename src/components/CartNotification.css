@@ -1,0 +1,340 @@
+/* ===============================================
+   CART NOTIFICATION - Fixsy Parts
+   Notificación elegante al agregar al carrito
+   =============================================== */
+
+.cart-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(120%) scale(0.95);
+  transition: 
+    opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    visibility 0.35s;
+  pointer-events: none;
+}
+
+.cart-notification--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.cart-notification__content {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 12px 14px;
+  padding: 18px 44px 22px 18px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.15),
+    0 8px 20px rgba(0, 100, 205, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 100, 205, 0.15);
+  min-width: 340px;
+  max-width: 420px;
+  overflow: hidden;
+}
+
+/* Efecto de brillo al aparecer */
+.cart-notification--visible .cart-notification__content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: notification-shine 0.8s ease-out 0.2s;
+}
+
+@keyframes notification-shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ======= Ícono de Check Animado ======= */
+.cart-notification__icon-wrap {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 48px;
+  height: 48px;
+  align-self: start;
+}
+
+.cart-notification__check {
+  width: 48px;
+  height: 48px;
+}
+
+.cart-notification__check-circle {
+  stroke: #10b981;
+  stroke-width: 2.5;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-linecap: round;
+  animation: check-circle-anim 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.cart-notification__check-mark {
+  stroke: #10b981;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: check-mark-anim 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+@keyframes check-circle-anim {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes check-mark-anim {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ======= Información del Producto ======= */
+.cart-notification__info {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cart-notification__title {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10b981;
+  letter-spacing: -0.01em;
+}
+
+.cart-notification__product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(0, 100, 205, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 100, 205, 0.08);
+}
+
+.cart-notification__product-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.cart-notification__product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cart-notification__product-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.cart-notification__product-meta {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ======= Acciones ======= */
+.cart-notification__actions {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 100, 205, 0.08);
+}
+
+.cart-notification__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  white-space: nowrap;
+}
+
+.cart-notification__btn--primary {
+  background: linear-gradient(135deg, #0064CD 0%, #0052a8 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 100, 205, 0.35);
+}
+
+.cart-notification__btn--primary:hover {
+  background: linear-gradient(135deg, #0057b2 0%, #004590 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 100, 205, 0.4);
+}
+
+.cart-notification__btn--primary:active {
+  transform: translateY(0);
+}
+
+.cart-notification__btn--ghost {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.cart-notification__btn--ghost:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+/* ======= Botón Cerrar ======= */
+.cart-notification__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.cart-notification__close:hover {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ======= Barra de Progreso ======= */
+.cart-notification__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0, 100, 205, 0.1);
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+}
+
+.cart-notification__progress-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #0064CD 100%);
+  transform: scaleX(1);
+  transform-origin: left;
+  transition: none;
+}
+
+.cart-notification__progress-bar--active {
+  animation: progress-shrink 4s linear forwards;
+}
+
+@keyframes progress-shrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* ======= Responsive ======= */
+@media (max-width: 480px) {
+  .cart-notification {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    transform: translateY(-120%) scale(0.95);
+  }
+  
+  .cart-notification--visible {
+    transform: translateY(0) scale(1);
+  }
+  
+  .cart-notification__content {
+    min-width: unset;
+    max-width: unset;
+    padding: 16px 40px 16px 16px;
+    grid-template-columns: 40px 1fr;
+    gap: 10px 12px;
+  }
+  
+  .cart-notification__icon-wrap {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .cart-notification__check {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .cart-notification__product-name {
+    max-width: 150px;
+  }
+  
+  .cart-notification__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .cart-notification__btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* ======= Animación de entrada especial ======= */
+.cart-notification--visible .cart-notification__icon-wrap {
+  animation: icon-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+}
+
+@keyframes icon-bounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+

@@ -31,6 +31,31 @@ export function buildUserAvatarUrl(userId: string, cacheBust?: number | string) 
   return buildApiUrl(USERS_API_BASE, `/api/users/${userId}/avatar${suffix}`);
 }
 
+/**
+ * Construye la URL completa para una imagen de producto
+ * Si la imagen ya es una URL completa, la devuelve tal cual
+ * Si es una ruta relativa como /images/file.jpg, le agrega el host del microservicio
+ */
+export function buildProductImageUrl(imagePath: string | null | undefined): string {
+  if (!imagePath) return '';
+  
+  // Si ya es una URL completa, devolverla tal cual
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Extraer el nombre del archivo si viene con /images/
+  let fileName = imagePath;
+  if (imagePath.startsWith('/images/')) {
+    fileName = imagePath.replace('/images/', '');
+  } else if (imagePath.startsWith('images/')) {
+    fileName = imagePath.replace('images/', '');
+  }
+  
+  // Construir la URL completa usando el endpoint /images/{fileName}
+  return `${PRODUCTS_API_BASE}/images/${fileName}`;
+}
+
 export async function parseErrorMessage(response: Response) {
   try {
     const data = (await response.json()) as ApiErrorResponse;

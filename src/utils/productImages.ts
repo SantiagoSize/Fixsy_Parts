@@ -1,13 +1,51 @@
 import { Product } from '../types/product';
+import { buildProductImageUrl } from './api';
 
 export function getProductImages(product: Product | any): string[] {
+  const images: string[] = [];
+  
+  // Primero intentar con el array de imágenes
   if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
-    const filtered = product.images.filter(Boolean);
+    const filtered = product.images
+      .filter(Boolean)
+      .map(img => {
+        // Si la imagen ya tiene /images/, usarla directamente
+        if (typeof img === 'string' && img.includes('/images/')) {
+          return buildProductImageUrl(img);
+        }
+        // Si es solo un nombre de archivo, agregar /images/
+        if (typeof img === 'string' && !img.startsWith('/') && !img.startsWith('http')) {
+          return buildProductImageUrl(`/images/${img}`);
+        }
+        return buildProductImageUrl(img);
+      })
+      .filter(Boolean);
     if (filtered.length) return filtered;
   }
-  if (product?.imageUrl) return [product.imageUrl];
-  if (product?.imagen) return [product.imagen];
-  return [];
+  
+  // Luego con imageUrl
+  if (product?.imageUrl) {
+    let imagePath = product.imageUrl;
+    // Si no empieza con /images/ y no es URL completa, agregarlo
+    if (!imagePath.startsWith('http') && !imagePath.startsWith('/images/') && !imagePath.startsWith('/')) {
+      imagePath = `/images/${imagePath}`;
+    }
+    const url = buildProductImageUrl(imagePath);
+    if (url) images.push(url);
+  }
+  
+  // Finalmente con imagen
+  if (product?.imagen && images.length === 0) {
+    let imagePath = product.imagen;
+    // Si no empieza con /images/ y no es URL completa, agregarlo
+    if (!imagePath.startsWith('http') && !imagePath.startsWith('/images/') && !imagePath.startsWith('/')) {
+      imagePath = `/images/${imagePath}`;
+    }
+    const url = buildProductImageUrl(imagePath);
+    if (url) images.push(url);
+  }
+  
+  return images;
 }
 
 export function getProductPlaceholder(nombre?: string) {

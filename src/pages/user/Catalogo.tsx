@@ -2,14 +2,12 @@ import React from 'react';
 import './Catalogo.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { toast } from '../../hooks/useToast';
 import { apiFetch, PRODUCTS_API_BASE } from '../../utils/api';
 import { Product } from '../../types/product';
 import CatalogFilters, { SortOption, TagOption } from '../../components/catalog/CatalogFilters';
 import CatalogGrid from '../../components/catalog/CatalogGrid';
 import { CatalogCardProduct } from '../../components/catalog/CatalogProductCard';
 import Pagination from '../../components/catalog/Pagination';
-import { ProductModal } from '../../components/ProductModal';
 import { getDisplayPrice } from '../../utils/price';
 import { useResponsive } from '../../hooks/useResponsive';
 
@@ -138,7 +136,6 @@ export default function Catalogo(): React.ReactElement {
   const [products, setProducts] = React.useState<NormalizedProduct[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [view, setView] = React.useState<NormalizedProduct | null>(null);
   const [selectedCategory, setSelectedCategory] = React.useState<string>(() =>
     normalizeCategoryParam(searchParams.get('categoria'))
   );
@@ -146,9 +143,6 @@ export default function Catalogo(): React.ReactElement {
   const [searchTerm, setSearchTerm] = React.useState(() => searchParams.get('q') || '');
   const [sortOption, setSortOption] = React.useState<SortOption>('featured');
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(() =>
-    typeof window !== 'undefined' && window.innerWidth <= 720 ? 'list' : 'grid'
-  );
   const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -210,9 +204,6 @@ export default function Catalogo(): React.ReactElement {
   }, [searchTerm, selectedCategory, selectedTags, sortOption]);
 
   React.useEffect(() => {
-    if (isMobile) {
-      setViewMode('list');
-    }
     if (!isMobile) {
       setFiltersOpen(false);
     }
@@ -306,7 +297,7 @@ export default function Catalogo(): React.ReactElement {
       },
       1
     );
-    try { toast('Producto agregado al carrito'); } catch {}
+    // La notificación del carrito se muestra automáticamente desde CartContext
   };
 
   const toggleTag = (tag: string) => {
@@ -315,11 +306,7 @@ export default function Catalogo(): React.ReactElement {
   };
 
   const handleView = (p: CatalogCardProduct) => {
-    if (isMobile) {
-      navigate(`/product/${p.id}`);
-    } else {
-      setView(p as NormalizedProduct);
-    }
+    navigate(`/product/${encodeURIComponent(String(p.id))}`);
   };
 
   const handleReset = () => {
@@ -330,42 +317,27 @@ export default function Catalogo(): React.ReactElement {
   };
 
   const hasResults = filteredProducts.length > 0;
-  const layoutClass = `catalog-shell catalog-layout container-xxl row g-4 ${isMobile ? 'catalog-layout--stack' : ''}`;
+  const layoutClass = `catalog-shell catalog-layout ${isMobile ? 'catalog-layout--stack' : ''}`;
 
   return (
     <section className="catalog-page">
       <div className="catalog-hero container-xxl">
         <p className="catalog-eyebrow">Fixsy Parts</p>
-        <h1 className="catalog-title">Catalogo de productos</h1>
-        <p className="catalog-subtitle">Explora repuestos originales y alternativos con filtros rapidos por categoria, tags y ofertas.</p>
-      </div>
-
-      <div className="catalog-inline-search container-xxl">
-        <div className="catalog-inline-search__field">
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, categoria o palabra clave..."
-            aria-label="Buscar en catalogo"
-            className="form-control"
-          />
-        </div>
-        <div className="catalog-inline-search__actions">
-          <button type="button" onClick={handleReset} className="catalog-mobile-btn catalog-mobile-btn--ghost btn btn-outline-secondary">
-            Limpiar
+        <h1 className="catalog-title">Catálogo de productos</h1>
+        <p className="catalog-subtitle">Explora repuestos originales y alternativos con filtros rápidos por categoría, tags y ofertas.</p>
+        {isMobile && (
+          <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-filter-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>
+            </svg>
+            Filtros
           </button>
-          {isMobile && (
-            <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-btn btn btn-primary">
-              Filtros
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       <div className={layoutClass}>
         {!isMobile && (
-          <aside className="catalog-sidebar col-12 col-lg-3">
+          <aside className="catalog-sidebar">
             <CatalogFilters
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -383,36 +355,18 @@ export default function Catalogo(): React.ReactElement {
           </aside>
         )}
 
-        <div className="catalog-content catalog-results col-12 col-lg-9">
+        <div className="catalog-content catalog-results">
           <div className="catalog-content__top catalog-results__header">
             <div className="catalog-meta">
-              {loading && <span>Cargando catalogo...</span>}
+              {loading && <span>Cargando catálogo...</span>}
               {!loading && error && <span className="catalog-meta__error">{error}</span>}
               {!loading && !error && (
-                <span>{hasResults ? `${filteredProducts.length} productos` : 'Sin resultados con los filtros actuales'}</span>
+                <span>{hasResults ? `${filteredProducts.length} productos encontrados` : 'Sin resultados con los filtros actuales'}</span>
               )}
             </div>
             <div className="catalog-view">
-              <div className="catalog-view__toggles">
-                <button
-                  type="button"
-                  className={`catalog-view__btn ${viewMode === 'grid' ? 'is-active' : ''}`}
-                  onClick={() => setViewMode('grid')}
-                  aria-pressed={viewMode === 'grid'}
-                >
-                  Grilla
-                </button>
-                <button
-                  type="button"
-                  className={`catalog-view__btn ${viewMode === 'list' ? 'is-active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                  aria-pressed={viewMode === 'list'}
-                >
-                  Lista
-                </button>
-              </div>
               <div className="catalog-view__sort">
-                <label className="catalog-sort__label" htmlFor="catalog-sort-select-inline">Ordenar por</label>
+                <label className="catalog-sort__label" htmlFor="catalog-sort-select-inline">Ordenar:</label>
                 <select
                   id="catalog-sort-select-inline"
                   value={sortOption}
@@ -420,9 +374,9 @@ export default function Catalogo(): React.ReactElement {
                   className="catalog-sort__select form-select"
                 >
                   <option value="featured">Destacados</option>
-                  <option value="price_asc">Precio: de menor a mayor</option>
-                  <option value="price_desc">Precio: de mayor a menor</option>
-                  <option value="recent">Mas recientes</option>
+                  <option value="price_asc">Menor precio</option>
+                  <option value="price_desc">Mayor precio</option>
+                  <option value="recent">Más recientes</option>
                 </select>
               </div>
             </div>
@@ -440,7 +394,7 @@ export default function Catalogo(): React.ReactElement {
                 emptyMessage="No se encontraron productos para estos filtros."
                 onAdd={handleAdd}
                 onView={handleView}
-                viewMode={viewMode}
+                viewMode="grid"
               />
               <Pagination
                 currentPage={safePage}
@@ -492,13 +446,6 @@ export default function Catalogo(): React.ReactElement {
         </div>
       )}
 
-      {view && (
-        <ProductModal
-          product={view}
-          onAdd={() => handleAdd(view)}
-          onClose={() => setView(null)}
-        />
-      )}
     </section>
   );
 }

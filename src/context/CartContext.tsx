@@ -1,5 +1,6 @@
 import React from 'react';
 import { toast } from '../hooks/useToast';
+import { showCartNotification } from '../hooks/useCartNotification';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import { CartProduct } from '../types/product';
 
@@ -83,6 +84,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toast('No hay stock disponible para este producto');
       return;
     }
+    
+    // Usar ref para rastrear si se agregó exitosamente
+    const addedRef = { value: false };
+    
     setItems(prev => {
       const idx = prev.findIndex(ci => String(ci.productId) === String(product.id));
       if (idx >= 0) {
@@ -92,6 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           toast('No hay stock disponible para este producto');
           return prev;
         }
+        addedRef.value = true;
         const copy = [...prev];
         copy[idx] = { ...current, quantity: nextQty, unitPrice };
         return copy;
@@ -100,8 +106,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         toast('No hay stock disponible para este producto');
         return prev;
       }
+      addedRef.value = true;
       return [...prev, { productId: product.id, product, quantity, unitPrice }];
     });
+    
+    // Mostrar notificación visual del carrito con un pequeño delay
+    // para asegurar que el estado se actualizó
+    setTimeout(() => {
+      if (addedRef.value) {
+        try {
+          showCartNotification({
+            productName: product.nombre,
+            productImage: product.imageUrl || product.imagen,
+            quantity,
+            price: unitPrice,
+          });
+        } catch {
+          // Fallback silencioso si la notificación no está disponible
+        }
+      }
+    }, 0);
   }, []);
 
   const updateQuantity = React.useCallback((productId: string | number, quantity: number) => {

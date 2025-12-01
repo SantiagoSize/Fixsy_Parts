@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useMessages } from '../../context/MessagesContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
 function NavBar() {
@@ -13,13 +12,10 @@ function NavBar() {
   const { items } = useCart();
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
-  const { unreadCount } = useMessages();
   const { isMobile } = useResponsive();
   const [openMenu, setOpenMenu] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const count = items.reduce((sum, it) => sum + it.quantity, 0);
-  const unread = user ? unreadCount(user.email) : 0;
-  const unreadText = unread > 99 ? '99+' : unread > 0 ? String(unread) : '';
   const dashboardPath = user?.role === 'Admin' ? '/dashboard/admin' : user?.role === 'Soporte' ? '/dashboard/support' : null;
   const goCatalog = React.useCallback((term?: string) => {
     const query = term ? `?q=${encodeURIComponent(term)}` : '';
@@ -108,9 +104,6 @@ function NavBar() {
                 <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            {!!unread && (
-              <span className="profile-msg-badge" aria-label={`${unread} mensajes no leidos`}>{unreadText}</span>
-            )}
             {isAuthenticated && openMenu && (
               <div
                 role="menu"
@@ -126,12 +119,6 @@ function NavBar() {
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
                 >
                   Ver perfil
-                </button>
-                <button
-                  onClick={() => { setOpenMenu(false); navigate('/inbox'); }}
-                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                >
-                  Bandeja de mensajes
                 </button>
                 <button
                   onClick={() => { setOpenMenu(false); navigate('/history'); }}

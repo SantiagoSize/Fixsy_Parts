@@ -11,7 +11,6 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import Profile from '../pages/auth/Profile';
-import Inbox from '../pages/account/Inbox';
 import ComposeMessage from '../pages/support/ComposeMessage';
 import PurchaseHistory from '../pages/account/PurchaseHistory';
 import Catalogo from '../pages/user/Catalogo';
@@ -46,7 +45,6 @@ function AppRoutes(): React.ReactElement {
       <Route path="/login" element={<PublicOnlyRoute element={<Login />} />} />
       <Route path="/register" element={<PublicOnlyRoute element={<Register />} />} />
       <Route path="/forgot-password" element={<PublicOnlyRoute element={<ForgotPassword />} />} />
-      <Route path="/inbox" element={<PrivateRoute element={<Inbox />} />} />
       <Route path="/compose" element={<RoleRoute allowed={['Soporte']} element={<ComposeMessage />} />} />
       <Route path="/history" element={<PrivateRoute element={<PurchaseHistory />} />} />
       <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />

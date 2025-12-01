@@ -12,10 +12,10 @@ export interface ShippingEstimate {
 }
 
 export function estimateShipping(address: ShippingAddress, subtotal: number): ShippingEstimate {
-  if (subtotal >= 100000) {
+  if (subtotal >= 50000) {
     return {
       price: 0,
-      label: 'Envio GRATIS por compras sobre $100.000',
+      label: 'Envio GRATIS por compras sobre $50.000',
       carrier: 'Chilexpress (estimado)',
       eta: '2 a 5 dias habiles',
     };
