@@ -8,17 +8,20 @@ type Props = {
 };
 
 export default function ProfileHeader({ firstName, photo, onPick, loading }: Props) {
+  const [imageFailed, setImageFailed] = React.useState(false);
+
   const onChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0];
     if (file) onPick(file);
   };
 
+  React.useEffect(() => { setImageFailed(false); }, [photo]);
+
   return (
     <div className="profile-header">
       <div className="profile-avatar">
-        {photo ? (
-          // eslint-disable-next-line jsx-a11y/alt-text
-          <img src={photo} />
+        {photo && !imageFailed ? (
+          <img src={photo} alt="Avatar del usuario" onError={() => setImageFailed(true)} />
         ) : (
           <div className="avatar-placeholder">{firstName?.[0]?.toUpperCase() || 'U'}</div>
         )}

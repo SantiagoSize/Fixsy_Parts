@@ -19,10 +19,13 @@ function NavBar() {
   const unread = user ? unreadCount(user.email) : 0;
   const unreadText = unread > 99 ? '99+' : unread > 0 ? String(unread) : '';
   const dashboardPath = user?.role === 'Admin' ? '/dashboard/admin' : user?.role === 'Soporte' ? '/dashboard/support' : null;
-  const goCatalog = () => navigate('/catalogo');
+  const goCatalog = React.useCallback((term?: string) => {
+    const query = term ? `?q=${encodeURIComponent(term)}` : '';
+    navigate(`/catalogo${query}`);
+  }, [navigate]);
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    goCatalog();
+    goCatalog(search.trim() || undefined);
   };
 
   return (

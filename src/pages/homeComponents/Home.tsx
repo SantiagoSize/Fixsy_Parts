@@ -2,9 +2,16 @@ import './Home.css';
 import HeroComponent from './HeroComponent';
 import OffersCarousel from './OffersCarousel';
 import MostVisited from './MostVisited';
-import body1 from '../../assets/Body1.png';
-import body2 from '../../assets/Body2.png';
-import body3 from '../../assets/Body 3.png';
+import catAccesorios from '../../assets/categoria/Accesorios.png';
+import catAceite from '../../assets/categoria/aceite.png';
+import catSuspension from '../../assets/categoria/amortiguador.jpg';
+import catBateria from '../../assets/categoria/bateria.png';
+import catFiltros from '../../assets/categoria/Filtro.jpg';
+import catFrenos from '../../assets/categoria/Freno.jpg';
+import catFocos from '../../assets/categoria/focos.png';
+import catFusible from '../../assets/categoria/fusible.png';
+import CategoryCard from './CategoryCard';
+import { useNavigate } from 'react-router-dom';
 
 type Category = {
   name: string;
@@ -13,43 +20,52 @@ type Category = {
 };
 
 function Home() {
-  const visuals = [body1, body2, body3];
+  const navigate = useNavigate();
   const categories: Category[] = [
-    { name: 'Filtros', desc: 'Aire, aceite y combustible', image: visuals[0] },
-    { name: 'Frenos', desc: 'Pastillas, discos y kits', image: visuals[1] },
-    { name: 'Suspension', desc: 'Amortiguadores y rotulas', image: visuals[2] },
-    { name: 'Baterias', desc: 'Energia y encendido', image: visuals[1] },
-    { name: 'Aceites', desc: 'Lubricantes premium', image: visuals[0] },
-    { name: 'Iluminacion', desc: 'Focos y kits LED', image: visuals[2] },
-    { name: 'Accesorios', desc: 'Tapetes, cubreasientos', image: visuals[0] },
-    { name: 'Electrico', desc: 'Sensores y fusibles', image: visuals[1] },
+    { name: 'Filtros', desc: 'Aire, aceite y combustible', image: catFiltros },
+    { name: 'Frenos', desc: 'Pastillas, discos y kits', image: catFrenos },
+    { name: 'Aceites', desc: 'Lubricantes premium', image: catAceite },
+    { name: 'Baterías', desc: 'Energía y encendido', image: catBateria },
+    { name: 'Suspensión', desc: 'Amortiguadores y rótulas', image: catSuspension },
+    { name: 'Iluminación', desc: 'Focos y kits LED', image: catFocos },
+    { name: 'Accesorios', desc: 'Tapetes, cubreasientos', image: catAccesorios },
+    { name: 'Eléctrico', desc: 'Sensores y fusibles', image: catFusible },
   ];
 
   return (
     <div className="home-shell">
       <div className="home-container">
-        <HeroComponent />
-        <OffersCarousel />
+        <div className="home-hero-block">
+          <div className="home-hero-col home-hero-col--text">
+            <HeroComponent />
+          </div>
+          <div className="home-hero-col home-hero-col--carousel">
+            <OffersCarousel />
+          </div>
+        </div>
 
         <section className="home-section home-categories">
-          <div className="section-header">
+          <div className="section-header categories-header">
             <div>
-              <p className="section-kicker">Explora por categoria</p>
-              <h2 className="section-title">Repuestos destacados</h2>
+              <h2 className="section-title">Explora por categoria</h2>
             </div>
-            <div className="section-cta">Encuentra rapido lo que necesitas</div>
+            <button
+              type="button"
+              className="home-hero__button home-categories__cta"
+              onClick={() => navigate('/catalogo')}
+            >
+              Ver todas las categorías
+            </button>
           </div>
           <div className="categories-grid">
             {categories.map((cat) => (
-              <div className="category-card" key={cat.name}>
-                <div className="category-media">
-                  <img src={cat.image} alt={cat.name} />
-                </div>
-                <div className="category-body">
-                  <div className="category-name">{cat.name}</div>
-                  <div className="category-desc">{cat.desc}</div>
-                </div>
-              </div>
+              <CategoryCard
+                key={cat.name}
+                title={cat.name}
+                subtitle={cat.desc}
+                imageSrc={cat.image}
+                onClick={() => navigate(`/catalogo?categoria=${encodeURIComponent(cat.name)}`)}
+              />
             ))}
           </div>
         </section>

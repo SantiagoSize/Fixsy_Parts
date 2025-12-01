@@ -40,6 +40,7 @@ export default function ProductItem({ product, variant = 'catalog', actions, onC
   }, []);
 
   const displayPrice = getDisplayPrice(product);
+  const badgeLabel = displayPrice.hasDiscount ? 'Oferta' : (product as any).isFeatured ? 'Destacado' : null;
 
   return (
     <article className={wrapperClass} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : -1}>
@@ -48,6 +49,7 @@ export default function ProductItem({ product, variant = 'catalog', actions, onC
       </div>
       <div className="product-info">
         <h3 className="product-title">{product.nombre}</h3>
+        {badgeLabel && <span className="price__badge">{badgeLabel}</span>}
         <div className="product-price">
           {displayPrice.hasDiscount ? (
             <div className="price price--with-discount">

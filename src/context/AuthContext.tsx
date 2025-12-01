@@ -1,96 +1,124 @@
 import React from 'react';
-import { Role, SessionUser } from '../types/auth';
+import { AuthSessionResponse, LoginPayload, RegisterPayload, Role, SessionUser, UserProfileResponse } from '../types/auth';
 import { STORAGE_KEYS } from '../utils/storageKeys';
+import { ApiResult, USERS_API_BASE, apiFetch } from '../utils/api';
 
-// 🧹 FIXSY CLEANUP: organised structure, no logic changes
-export type AuthUser = SessionUser & { password: string }; // demo/localStorage únicamente
+type LoginResult = { ok: boolean; status?: number; error?: string };
+type RegisterResult = { ok: boolean; status?: number; error?: string };
 
 type AuthContextValue = {
   user: SessionUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (user: Omit<AuthUser, 'id' | 'role'>) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  register: (user: RegisterPayload) => Promise<RegisterResult>;
   logout: () => void;
+  refreshUser: () => Promise<SessionUser | null>;
+  setSessionUser: (user: SessionUser) => void;
 };
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
 
-const USERS_KEY = STORAGE_KEYS.authUsers;
-const SESSION_KEY = STORAGE_KEYS.currentUser;
+const SESSION_KEYS = [STORAGE_KEYS.currentUser, 'fixsy_auth_user'] as const;
 
-function loadUsers(): AuthUser[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser[]) : [];
-  } catch {
-    return [];
+function readSession(): SessionUser | null {
+  for (const key of SESSION_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw) as SessionUser;
+    } catch {}
   }
+  return null;
 }
 
-function saveUsers(users: AuthUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+function persistSession(value: SessionUser | null) {
+  SESSION_KEYS.forEach(key => {
+    try {
+      if (value) localStorage.setItem(key, JSON.stringify(value));
+      else localStorage.removeItem(key);
+    } catch {}
+  });
 }
 
-function loadSession(): SessionUser | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as SessionUser) : null;
-  } catch {
-    return null;
-  }
+function mapRole(value: any): Role {
+  if (value === 'Admin' || value === 'Soporte') return value;
+  return 'Usuario';
+}
+
+function mapApiUser(raw: any): SessionUser {
+  const source = raw?.user ?? raw;
+  const idValue = source?.id ?? source?.userId ?? source?.uid;
+  const token = source?.token ?? raw?.token ?? raw?.accessToken;
+  return {
+    id: idValue ? String(idValue) : '',
+    nombre: source?.nombre ?? source?.firstName ?? '',
+    apellido: source?.apellido ?? source?.lastName ?? '',
+    email: source?.email ?? '',
+    role: mapRole(source?.role ?? source?.rol ?? source?.authority),
+    profilePic: source?.profilePic || source?.avatarUrl || source?.avatar || undefined,
+    token,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<SessionUser | null>(loadSession());
+  const [user, setUser] = React.useState<SessionUser | null>(readSession());
 
-  const login = React.useCallback(async (email: string, password: string) => {
-    const users = loadUsers();
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (found) {
-      const sessionUser: SessionUser = {
-        id: found.id,
-        nombre: found.nombre,
-        apellido: found.apellido,
-        email: found.email,
-        role: found.role,
-        profilePic: found.profilePic,
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
-      setUser(sessionUser);
-      return true;
-    }
-    return false;
-  }, []);
-
-  const register = React.useCallback(async (newUser: Omit<AuthUser, 'id' | 'role'>) => {
-    const users = loadUsers();
-    const exists = users.some(u => u.email.toLowerCase() === newUser.email.toLowerCase());
-    if (exists) return { ok: false, error: 'El email ya está registrado' };
-    // Asignación automática de rol por dominio
-    const emailLower = newUser.email.trim().toLowerCase();
-    const domain = (emailLower.split('@')[1] || '').trim();
-    const role: Role =
-      domain === 'admin.fixsy.com' ? 'Admin' :
-      domain === 'soporte.fixsy.com' ? 'Soporte' :
-      'Usuario';
-    const userToSave: AuthUser = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      nombre: newUser.nombre,
-      apellido: newUser.apellido,
-      email: newUser.email,
-      password: newUser.password,
-      role,
-      profilePic: (newUser as any).profilePic || '',
-    };
-    users.push(userToSave);
-    saveUsers(users);
-    return { ok: true };
+  const setSessionUser = React.useCallback((next: SessionUser) => {
+    persistSession(next);
+    setUser(next);
   }, []);
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem(SESSION_KEY);
+    persistSession(null);
     setUser(null);
   }, []);
+
+  const safeApiCall = React.useCallback(
+    <T,>(path: string, options?: RequestInit & { json?: unknown }) =>
+      apiFetch<T>(USERS_API_BASE, path, { ...(options || {}), asResult: true }) as Promise<ApiResult<T>>,
+    []
+  );
+
+  const login = React.useCallback(async (email: string, password: string) => {
+    const payload: LoginPayload = { email: email.trim(), password };
+    const result = await safeApiCall<AuthSessionResponse | UserProfileResponse>('/api/auth/login', {
+      method: 'POST',
+      json: payload,
+    });
+
+    if (!result.ok) {
+      const unauthorized = result.status === 401 || result.status === 403;
+      const message = unauthorized ? 'Credenciales invalidas' : (result.error || 'No se pudo iniciar sesion');
+      return { ok: false, status: result.status, error: message };
+    }
+
+    const sessionUser = mapApiUser(result.data);
+    setSessionUser(sessionUser);
+    return { ok: true, status: result.status };
+  }, [safeApiCall, setSessionUser]);
+
+  const register = React.useCallback(async (newUser: RegisterPayload) => {
+    const payload = { ...newUser, email: newUser.email.trim() };
+    const result = await safeApiCall('/api/auth/register', { method: 'POST', json: payload });
+
+    if (!result.ok) {
+      const generic = result.status === 400 ? 'Datos invalidos' : 'No se pudo completar el registro';
+      return { ok: false, status: result.status, error: result.error || generic };
+    }
+
+    return { ok: true, status: result.status };
+  }, [safeApiCall]);
+
+  const refreshUser = React.useCallback(async () => {
+    if (!user?.id) return null;
+    const result = await safeApiCall<UserProfileResponse>(`/api/users/${user.id}`, { method: 'GET' });
+    if (!result.ok) {
+      if (result.status === 401 || result.status === 403) logout();
+      return null;
+    }
+    const mapped = mapApiUser({ ...result.data, email: (result.data as any)?.email ?? user.email });
+    setSessionUser(mapped);
+    return mapped;
+  }, [user?.id, user?.email, logout, setSessionUser, safeApiCall]);
 
   const value = React.useMemo<AuthContextValue>(() => ({
     user,
@@ -98,7 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
-  }), [user, login, register, logout]);
+    refreshUser,
+    setSessionUser,
+  }), [user, login, register, logout, refreshUser, setSessionUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

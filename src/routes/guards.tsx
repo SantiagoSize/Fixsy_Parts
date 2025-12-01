@@ -19,3 +19,13 @@ export function RoleRoute({ element, allowed, redirectTo = '/' }: RoleRouteProps
   if (!allowed.includes(user.role)) return <Navigate to={redirectTo} replace />;
   return element;
 }
+
+type PublicOnlyRouteProps = GuardProps & { redirectOverride?: string };
+
+export function PublicOnlyRoute({ element, redirectOverride }: PublicOnlyRouteProps) {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return element;
+
+  const defaultRedirect = user?.role === 'Admin' || user?.role === 'Soporte' ? '/dashboard' : '/';
+  return <Navigate to={redirectOverride || defaultRedirect} replace />;
+}

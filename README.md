@@ -47,3 +47,9 @@ npm install
 npm run dev   # entorno de desarrollo
 npm run build # compilación de producción
 ```
+
+## Integracion con microservicios
+- Productos: usa VITE_PRODUCTS_API (/api/products, /api/products/{id}) para catalogo y detalle.
+- Ordenes: usa VITE_ORDERS_API (/api/orders) desde checkout para crear la compra real.
+- Mensajes/boletas: usa VITE_MESSAGES_API (/api/tickets) para guardar boleta como ticket y mostrarla en la bandeja.
+

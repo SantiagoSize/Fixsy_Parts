@@ -16,7 +16,7 @@ function CartView(): React.ReactElement {
   const { addresses } = useAddresses(user?.id || 'guest');
 
   const cartProducts: CartItemData[] = items.map((it) => ({
-    id: it.product.id,
+    id: it.productId,
     nombre: it.product.nombre,
     precio: it.product.precio,
     precioOferta: (it.product as any).precioOferta,
@@ -25,7 +25,12 @@ function CartView(): React.ReactElement {
     imagen: Array.isArray(it.product.images) && it.product.images[0] ? it.product.images[0] : it.product.imagen,
   }));
 
-  const subtotal = cartProducts.reduce((sum, p) => sum + getDisplayPrice(p).final * p.cantidad, 0);
+  const subtotal = items.reduce((sum, it) => {
+    const display = getDisplayPrice({ precio: it.product.precio, precioOferta: (it.product as any).precioOferta });
+    const unit = it.unitPrice ?? display.final;
+    return sum + unit * it.quantity;
+  }, 0);
+
   const shippingAddress: ShippingAddress | null = addresses[0]
     ? { region: addresses[0].region, provincia: addresses[0].province, comuna: addresses[0].commune }
     : null;

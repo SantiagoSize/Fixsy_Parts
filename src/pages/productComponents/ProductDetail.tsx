@@ -4,28 +4,18 @@ import { useCart } from '../../context/CartContext';
 import { toast } from '../../hooks/useToast';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './ProductDetail.css';
-
-type InvItem = { id: string; nombre: string; descripcion: string; precio: number; precioOferta?: number; stock: number; imagen?: string; images?: string[] };
-
-function readInventory(): InvItem[] {
-  try {
-    const raw = localStorage.getItem('fixsy_inventory');
-    const list = raw ? JSON.parse(raw) as InvItem[] : [];
-    if (!Array.isArray(list)) return [];
-    return list.map((it) => {
-      const imgs = Array.isArray(it.images) ? it.images.filter(Boolean) : (it.imagen ? [it.imagen] : []);
-      return { ...it, images: imgs, imagen: imgs[0] || it.imagen };
-    });
-  } catch { return []; }
-}
+import { apiFetch, PRODUCTS_API_BASE } from '../../utils/api';
+import { Product } from '../../types/product';
 
 function ProductDetail(): React.ReactElement {
   const { id } = useParams();
-  const inv = React.useMemo(() => readInventory(), []);
-  const product: InvItem | undefined = id ? inv.find(p => String(p.id) === String(id)) : undefined;
   const navigate = useNavigate();
   const { addToCart, items } = useCart();
-  const displayPrice = product ? getDisplayPrice(product as any) : null;
+  const [product, setProduct] = React.useState<Product | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [current, setCurrent] = React.useState(0);
+  const [quantity, setQuantity] = React.useState<number>(1);
 
   const images = React.useMemo(() => {
     if (!product) return [];
@@ -34,8 +24,29 @@ function ProductDetail(): React.ReactElement {
     return list;
   }, [product]);
 
-  const [current, setCurrent] = React.useState(0);
   const hasMultiple = images.length > 1;
+
+  React.useEffect(() => {
+    if (!id) return;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiFetch<Product>(`${PRODUCTS_API_BASE}/api/products/${id}`);
+        const normalized: Product = {
+          ...data,
+          images: Array.isArray(data.images) ? data.images.filter(Boolean) : data.imagen ? [data.imagen] : [],
+          imagen: data.images && Array.isArray(data.images) && data.images[0] ? data.images[0] : data.imagen,
+        };
+        setProduct(normalized);
+      } catch (err: any) {
+        setError(err?.message || 'No se pudo cargar el producto.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
 
   React.useEffect(() => {
     if (!hasMultiple) return;
@@ -43,9 +54,9 @@ function ProductDetail(): React.ReactElement {
     return () => window.clearInterval(idTimer);
   }, [hasMultiple, images.length]);
 
-  if (!product) {
-    return <div className="pd-container">Datos del producto no disponibles.</div>;
-  }
+  if (loading) return <div className="pd-container">Cargando producto...</div>;
+  if (error) return <div className="pd-container">{error}</div>;
+  if (!product) return <div className="pd-container">Datos del producto no disponibles.</div>;
 
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'>` +
     `<rect width='100%' height='100%' fill='%23f2f1f2'/>` +
@@ -53,24 +64,46 @@ function ProductDetail(): React.ReactElement {
     `</svg>`;
   const placeholderSrc = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
-  // Cantidad disponible considerando lo que ya hay en el carrito
-  const inCartQty = items.find(ci => String(ci.product.id) === String(product.id))?.quantity ?? 0;
-  const available = Math.max(0, product.stock - inCartQty);
+  const displayPrice = getDisplayPrice(product as any);
 
-  // Añadir al carrito: mostrar alerta si no hay stock suficiente
+  const inCartQty = items.find(ci => String(ci.productId) === String(product.id))?.quantity ?? 0;
+  const available = Math.max(0, (product.stock ?? 0) - inCartQty);
+  const isAvailable = (product.isActive !== false) && (product.stock ?? 0) > 0;
+
   const handleAdd = () => {
-    if (available < 1) {
-      alert('No hay stock disponible para este producto');
+    if (available < 1 || !isAvailable) {
+      toast('No hay stock disponible para este producto');
       return;
     }
-    addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen, images: product.images } as any, 1);
-    try { toast('Producto añadido al carrito'); } catch {}
+    const qty = Math.max(1, Math.min(quantity, available || quantity));
+    addToCart({
+      id: product.id,
+      nombre: product.nombre,
+      descripcion: product.descripcion,
+      precio: product.precio,
+      precioOferta: product.precioOferta ?? undefined,
+      stock: product.stock,
+      imagen: product.imagen,
+      images: product.images,
+      sku: product.sku,
+    }, qty);
+    try { toast('Producto agregado al carrito'); } catch {}
   };
 
-  // Comprar ahora: avanzar siempre, sin alertas
   const handleBuyNow = () => {
-    if (available >= 1) {
-      addToCart({ id: product.id, nombre: product.nombre, descripcion: product.descripcion, precio: product.precio, stock: product.stock, imagen: product.imagen, images: product.images } as any, 1);
+    if (available >= 1 && isAvailable) {
+      const qty = Math.max(1, Math.min(quantity, available));
+      addToCart({
+        id: product.id,
+        nombre: product.nombre,
+        descripcion: product.descripcion,
+        precio: product.precio,
+        precioOferta: product.precioOferta ?? undefined,
+        stock: product.stock,
+        imagen: product.imagen,
+        images: product.images,
+        sku: product.sku,
+      }, qty);
     }
     navigate('/checkout');
   };
@@ -79,45 +112,150 @@ function ProductDetail(): React.ReactElement {
   const goNext = () => setCurrent((idx) => (idx + 1) % images.length);
 
   const currentSrc = images[current] || placeholderSrc;
+  const category = (product as any).categoria || (product as any).categoriaNombre || 'Repuesto';
+  const rawTags = (product as any).tags;
+  const tags = Array.isArray(rawTags)
+    ? rawTags
+    : typeof rawTags === 'string'
+      ? rawTags.split(',').map(t => t.trim()).filter(Boolean)
+      : [];
+  const specs: { label: string; value?: string | number | null }[] = [
+    { label: 'SKU', value: (product as any).sku || (product as any).codigo },
+    { label: 'Categoría', value: category },
+    { label: 'Marca', value: (product as any).marca },
+    { label: 'Stock', value: product.stock },
+  ].filter(item => item.value !== undefined && item.value !== null && item.value !== '');
+  const highlightList = [
+    (product as any).compatibilidad,
+    (product as any).tipo,
+    (product as any).aplicacion,
+  ].filter(Boolean) as string[];
 
   return (
-    <section className="pd-container">
-      <div className="pd-grid">
-        <div className="pd-image">
-          <div className="pd-image__wrap">
-            <img src={currentSrc} alt={product.nombre} />
-            {hasMultiple && (
-              <>
-                <button className="pd-nav pd-nav--prev" onClick={goPrev} aria-label="Anterior">‹</button>
-                <button className="pd-nav pd-nav--next" onClick={goNext} aria-label="Siguiente">›</button>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="pd-info">
-          <h1 className="pd-title">{product.nombre}</h1>
-          <p className="pd-desc">{product.descripcion}</p>
-          <div className="pd-price">
-            {displayPrice?.hasDiscount ? (
-              <div className="price price--with-discount">
-                <span className="price__original">{formatPrice(displayPrice.original)}</span>
-                <span className="price__final">{formatPrice(displayPrice.final)}</span>
-                {displayPrice.discountPercentage && (
-                  <span className="price__badge">-{displayPrice.discountPercentage}%</span>
-                )}
+    <main className="pd-shell">
+      <section className="productDetail">
+        <div className="productDetail__top">
+          <div className="productDetail__gallery">
+            <div className="pd-image__wrap">
+              <img src={currentSrc} alt={product.nombre} className="pd-image__main" />
+              {hasMultiple && (
+                <>
+                  <button className="pd-nav pd-nav--prev" onClick={goPrev} aria-label="Anterior">&lt;</button>
+                  <button className="pd-nav pd-nav--next" onClick={goNext} aria-label="Siguiente">&gt;</button>
+                </>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="pd-thumbs">
+                {images.map((img, idx) => (
+                  <button
+                    key={img}
+                    className={`pd-thumb ${idx === current ? 'is-active' : ''}`}
+                    onClick={() => setCurrent(idx)}
+                    aria-label={`Imagen ${idx + 1}`}
+                  >
+                    <img src={img || placeholderSrc} alt={`Vista ${idx + 1}`} />
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="price">{formatPrice(displayPrice?.final || product.precio)}</div>
             )}
           </div>
-          <p className="pd-stock">Stock: {product.stock} unid.</p>
-          <div className="pd-actions">
-            <button className="pd-btn add" onClick={handleAdd}>Añadir al carrito</button>
-            <button className="pd-btn buy" onClick={handleBuyNow}>Comprar ahora</button>
+
+          <div className="productDetail__info">
+            <div className="pd-badges">
+              <span className="catalog-chip catalog-chip--category">{category}</span>
+              {displayPrice.hasDiscount && <span className="catalog-chip catalog-chip--tag is-offer">Oferta</span>}
+              {(product as any).isFeatured && <span className="catalog-chip catalog-chip--tag is-featured">Destacado</span>}
+            </div>
+            <h1 className="pd-title">{product.nombre}</h1>
+            <div className="pd-rating">⭐⭐⭐⭐☆ <span className="pd-rating__hint">Calificación</span></div>
+            {highlightList.length > 0 && (
+              <ul className="pd-highlights">
+                {highlightList.map((item, idx) => <li key={idx}>{item}</li>)}
+              </ul>
+            )}
+            <p className="pd-desc">{product.descripcion}</p>
           </div>
+
+          <aside className="productDetail__buyBox">
+            <div className="pd-price">
+              {displayPrice?.hasDiscount ? (
+                <div className="price price--with-discount">
+                  <span className="price__original">{formatPrice(displayPrice.original)}</span>
+                  <span className="price__final">{formatPrice(displayPrice.final)}</span>
+                  {displayPrice.discountPercentage && (
+                    <span className="price__badge">-{displayPrice.discountPercentage}%</span>
+                  )}
+                </div>
+              ) : (
+                <div className="price">{formatPrice(displayPrice?.final || product.precio)}</div>
+              )}
+            </div>
+            <p className="pd-stock">
+              {isAvailable ? `Stock: ${product.stock} unid.` : 'No disponible'}
+              {available < (product.stock ?? 0) && available >= 0 && isAvailable && ` (disponibles: ${available})`}
+            </p>
+
+            <label className="pd-qty">
+              <span>Cantidad</span>
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, available)}
+                value={quantity}
+                onChange={(e) => {
+                  const next = Math.max(1, Number(e.target.value) || 1);
+                  const capped = available > 0 ? Math.min(next, available) : next;
+                  setQuantity(capped);
+                }}
+              />
+            </label>
+
+            <div className="pd-actions">
+              <button className="pd-btn add" onClick={handleAdd} disabled={!isAvailable}>Agregar al carrito</button>
+              <button className="pd-btn buy" onClick={handleBuyNow} disabled={!isAvailable}>Comprar ahora</button>
+              <button className="pd-btn back" type="button" onClick={() => navigate('/catalog')}>Volver al catálogo</button>
+            </div>
+            <div className="pd-help">
+              <p>🚚 Envíos a todo Chile</p>
+              <p>✅ Repuestos verificados por Fixsy Parts</p>
+            </div>
+          </aside>
         </div>
-      </div>
-    </section>
+
+        <section className="productDetail__bottom">
+          <div className="productDetail__description card">
+            <h2>Descripción del producto</h2>
+            <p>{product.descripcion || 'Sin descripción disponible.'}</p>
+          </div>
+
+          <div className="productDetail__specs card">
+            <h2>Características técnicas</h2>
+            {specs.length === 0 ? (
+              <p>No hay especificaciones adicionales.</p>
+            ) : (
+              <dl className="pd-specs">
+                {specs.map((spec) => (
+                  <React.Fragment key={spec.label}>
+                    <dt>{spec.label}</dt>
+                    <dd>{String(spec.value)}</dd>
+                  </React.Fragment>
+                ))}
+              </dl>
+            )}
+          </div>
+
+          <div className="productDetail__tags card">
+            <h2>Tags relacionados</h2>
+            <div className="pd-tags">
+              {tags.length > 0 ? tags.map(tag => (
+                <span key={tag} className="pd-tag">#{tag}</span>
+              )) : <p>No hay tags asociados.</p>}
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
   );
 }
 

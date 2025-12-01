@@ -9,7 +9,7 @@ import { STORAGE_KEYS } from '../../utils/storageKeys';
 import './Auth.css';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = React.useState('');
@@ -22,6 +22,10 @@ export default function Login() {
   const siteKey = getRecaptchaKey();
   const shouldUseCaptchaRoute = isAuthRoute(location.pathname);
   const shouldShowCaptcha = shouldUseCaptchaRoute && failedAttempts >= 2;
+
+  React.useEffect(() => {
+    if (isAuthenticated) navigate('/');
+  }, [isAuthenticated, navigate]);
 
   React.useEffect(() => {
     try {
@@ -43,14 +47,14 @@ export default function Login() {
       return;
     }
     const emailOk = /.+@.+\..+/.test(email);
-    if (!emailOk) { setError('Ingresa un email válido'); setLoading(false); return; }
+    if (!emailOk) { setError('Ingresa un email valido'); setLoading(false); return; }
     if (shouldShowCaptcha) {
       if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
       if (!recaptchaToken) { setError('Por seguridad debes verificar que no eres un robot.'); setLoading(false); return; }
     }
-    const ok = await login(email, password);
-    if (!ok) {
-      setError('Credenciales incorrectas');
+    const res = await login(email, password);
+    if (!res.ok) {
+      setError(res.error || 'Credenciales invalidas');
       setFailedAttempts(prev => prev + 1);
       if (shouldShowCaptcha && siteKey) {
         try { recaptchaRef.current?.reset(); } catch {}
@@ -66,14 +70,14 @@ export default function Login() {
       if (found) {
         const status = String(found.status || 'Activo');
         if (status === 'Bloqueado') {
-          setError('Tu cuenta está bloqueada. Contacta con soporte.');
+          setError('Tu cuenta esta bloqueada. Contacta con soporte.');
           setLoading(false);
           return;
         }
         if (status === 'Suspendido') {
           const until = found.suspensionHasta ? new Date(found.suspensionHasta) : null;
           if (until && new Date() < until) {
-            setError(`Tu cuenta está suspendida hasta ${until.toLocaleDateString()}`);
+            setError(`Tu cuenta esta suspendida hasta ${until.toLocaleDateString()}`);
             setLoading(false);
             return;
           } else {
@@ -101,14 +105,14 @@ export default function Login() {
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
-        <h1 className="auth-title">Iniciar sesión</h1>
+        <h1 className="auth-title">Iniciar sesion</h1>
         <form className="auth-form" onSubmit={onSubmit}>
           <div className="auth-field">
             <label htmlFor="email">Email</label>
             <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="auth-field">
-            <label htmlFor="password">Contraseña</label>
+            <label htmlFor="password">Contrasena</label>
             <input id="password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           {shouldShowCaptcha && (
@@ -133,10 +137,10 @@ export default function Login() {
           {error && <div className="form-error" role="alert">{error}</div>}
           <div className="auth-actions">
             <button type="submit" className="btn-primary form-button" disabled={loading || (shouldShowCaptcha && !recaptchaToken)}>
-              {loading ? 'Ingresando...' : 'Iniciar sesión'}
+              {loading ? 'Ingresando...' : 'Iniciar sesion'}
             </button>
             <div className="auth-links">
-              <Link className="auth-link" to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+              <Link className="auth-link" to="/forgot-password">?Olvidaste tu contrasena?</Link>
               <Link className="auth-link" to="/register">Crear cuenta</Link>
             </div>
           </div>

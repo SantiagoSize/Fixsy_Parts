@@ -33,6 +33,7 @@ export function ProductModal({ product, onAdd, onClose }: Props) {
   )}`;
 
   const displayPrice = getDisplayPrice(product);
+  const isAvailable = (product.stock ?? 0) > 0 && (product as any).isActive !== false;
 
   return (
     <div className="cat__modal" role="dialog" aria-modal="true">
@@ -42,8 +43,8 @@ export function ProductModal({ product, onAdd, onClose }: Props) {
             <img className="product-image" src={images[current] || placeholderSvg} alt={product.nombre} />
             {hasMultiple && (
               <>
-                <button className="cat__nav cat__nav--prev" type="button" onClick={goPrev} aria-label="Imagen anterior">‹</button>
-                <button className="cat__nav cat__nav--next" type="button" onClick={goNext} aria-label="Imagen siguiente">›</button>
+                <button className="cat__nav cat__nav--prev" type="button" onClick={goPrev} aria-label="Imagen anterior">&lt;</button>
+                <button className="cat__nav cat__nav--next" type="button" onClick={goNext} aria-label="Imagen siguiente">&gt;</button>
               </>
             )}
           </div>
@@ -68,7 +69,9 @@ export function ProductModal({ product, onAdd, onClose }: Props) {
             <span>Stock: {product.stock}</span>
           </div>
           <div className="cat__modalActions">
-            <button className="product-btn product-btn--primary" onClick={() => onAdd(product)}>Añadir al carrito</button>
+            <button className="product-btn product-btn--primary" onClick={() => isAvailable && onAdd(product)} disabled={!isAvailable}>
+              {isAvailable ? 'Agregar al carrito' : 'Sin stock'}
+            </button>
             <button className="product-btn product-btn--ghost" onClick={onClose}>Cerrar</button>
           </div>
         </div>

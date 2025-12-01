@@ -1,52 +1,32 @@
 .home-carousel {
   position: relative;
   width: 100%;
-  height: 400px;
+  height: 360px;
+  aspect-ratio: 16 / 6;
   overflow: hidden;
   display: grid;
   place-items: center;
   padding: 0;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(255,255,255,0.06) 0%, transparent 35%),
-    radial-gradient(circle at 80% 50%, rgba(255,255,255,0.06) 0%, transparent 35%),
-    linear-gradient(90deg, #0b0b0b 0%, #080808 45%, #0b0b0b 100%);
-  border-radius: 18px;
-  box-shadow: 0 20px 52px rgba(0,0,0,0.32);
-}
-
-.home-carousel::before,
-.home-carousel::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 160px;
-  pointer-events: none;
-}
-
-.home-carousel::before {
-  left: 0;
-  background: linear-gradient(90deg, #000 0%, rgba(0,0,0,0) 100%);
-}
-
-.home-carousel::after {
-  right: 0;
-  background: linear-gradient(270deg, #000 0%, rgba(0,0,0,0) 100%);
+  background: #000;
+  border-radius: 22px;
+  box-shadow: none;
 }
 
 .home-carousel__frame {
   position: relative;
   width: 100%;
   height: 100%;
+  border-radius: 22px;
+  overflow: hidden;
 }
 
 .home-carousel__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   display: block;
-  filter: drop-shadow(0 18px 50px rgba(0,0,0,0.35));
+  filter: none;
 }
 
 .home-carousel__image.is-fading {
