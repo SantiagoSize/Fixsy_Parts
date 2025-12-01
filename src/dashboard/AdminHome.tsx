@@ -7,7 +7,7 @@ import Inbox from "./components/Inbox";
 import InventoryCsvUpload from "./components/InventoryCsvUpload";
 import UserManagement from "./components/UserManagement";
 import DashboardWidgets from "./components/DashboardWidgets";
-import ProductsList from "./components/ProductsList";
+import AdminProductDashboard from "../pages/admin/AdminProductDashboard";
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -54,7 +54,9 @@ export default function AdminHome() {
         <SectionCard title="🧾 Inventario (CSV Upload)"><InventoryCsvUpload /></SectionCard>
       )}
       {key === 'products' && (
-        <SectionCard title="Productos"><ProductsList /></SectionCard>
+        <SectionCard title="Productos">
+          <AdminProductDashboard />
+        </SectionCard>
       )}
       {key === 'users' && (
         <SectionCard title="Administrar usuarios"><UserManagement /></SectionCard>

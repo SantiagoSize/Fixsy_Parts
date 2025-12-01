@@ -3,30 +3,25 @@ import { useAuth } from "../../context/AuthContext";
 import { Role } from "../../types/auth";
 import { STORAGE_KEYS } from "../../utils/storageKeys";
 import { MgmtUser, UserStatus, InboxMessage, UserPurchase } from "../../types/user";
+import { USERS_API_BASE, apiFetch, parseErrorMessage } from "../../utils/api";
 import { UserTable } from "./user/UserTable";
 import { UserDetailModal } from "./user/UserDetailModal";
 import { UserMessagesBox } from "./user/UserMessagesBox";
 import { UserPurchasesBox } from "./user/UserPurchasesBox";
 import { formatPrice, getDisplayPrice } from "../../utils/price";
 
-const MGMT_KEY = STORAGE_KEYS.mgmtUsers;
-const AUTH_KEY = STORAGE_KEYS.authUsers;
 const COMPRAS_KEY = STORAGE_KEYS.mgmtPurchases;
 const inboxKeyFor = (email: string) => `${STORAGE_KEYS.inboxPrefix}${(email || '').toLowerCase()}`;
 
-function loadUsers(): MgmtUser[] {
-  try {
-    const raw = localStorage.getItem(MGMT_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed as MgmtUser[] : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(list: MgmtUser[]) {
-  try { localStorage.setItem(MGMT_KEY, JSON.stringify(list)); } catch {}
-}
+const mapRoleSafe = (value: any, roleId?: any): Role => {
+  const id = Number(roleId);
+  if (id === 2) return 'Admin';
+  if (id === 3) return 'Soporte';
+  const v = String(value || '').toLowerCase();
+  if (v.includes('admin')) return 'Admin';
+  if (v.includes('soporte') || v.includes('support')) return 'Soporte';
+  return 'Usuario';
+};
 
 function loadCompras(): UserPurchase[] {
   try { const raw = localStorage.getItem(COMPRAS_KEY); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list : []; } catch { return []; }
@@ -120,6 +115,8 @@ export default function UserManagement() {
   const [toast, setToast] = useState<string>("");
   const [showPurchDetail, setShowPurchDetail] = useState<{ idCompra: string } | null>(null);
   const [showConv, setShowConv] = useState<{ id: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const normalizeStatus = (status: any): UserStatus => {
     if (status === "Bloqueado" || status === "Suspendido") return status;
@@ -127,39 +124,33 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    const data = loadUsers();
-    const now = new Date();
-    let changed = false;
-    let updated: MgmtUser[] = data.map((u) => {
-      if (normalizeStatus(u.status) === "Suspendido" && u.suspensionHasta) {
-        const fechaFin = new Date(u.suspensionHasta);
-        if (now > fechaFin) { changed = true; return { ...u, status: "Activo" as UserStatus, suspensionHasta: "" }; }
+    const fetchUsers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const list = await apiFetch<any[]>(USERS_API_BASE, '/api/users');
+        const mapped: MgmtUser[] = (Array.isArray(list) ? list : []).map((u: any) => ({
+          id: String(u.id ?? u.userId ?? u.uid ?? u.email ?? `u_${Math.random().toString(36).slice(2, 8)}`),
+          nombre: u.nombre ?? u.firstName ?? '',
+          apellido: u.apellido ?? u.lastName ?? '',
+          email: u.email ?? '',
+          role: mapRoleSafe(
+            u.role ?? u.rol ?? u.authority ?? u.roleName ?? (u.role?.name ?? 'Usuario'),
+            u.roleId ?? u.role_id ?? u.role?.id
+          ),
+          status: normalizeStatus(String(u.status ?? 'Activo')),
+          foto: u.profilePic || u.avatarUrl || u.avatar,
+          suspensionHasta: u.suspensionHasta || '',
+        }));
+        setUsers(mapped);
+      } catch (err: any) {
+        const msg = err?.message || 'No se pudo cargar la lista de usuarios.';
+        setError(msg);
+      } finally {
+        setLoading(false);
       }
-      return { ...u, status: normalizeStatus(u.status) };
-    });
-    try {
-      const raw = localStorage.getItem(AUTH_KEY);
-      const authList = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(authList)) {
-        const existingEmails = new Set(updated.map(u => (u.email || '').toLowerCase()));
-        const toAdd: MgmtUser[] = authList
-          .filter((a: any) => !existingEmails.has((a?.email || '').toLowerCase()))
-          .map((a: any) => ({
-            id: a.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            nombre: a.nombre || '',
-            apellido: a.apellido || '',
-            email: a.email || '',
-            role: (a.role || 'Usuario') as Role,
-            status: 'Activo' as UserStatus,
-          }));
-        if (toAdd.length > 0) {
-          updated = [...updated, ...toAdd];
-          changed = true;
-        }
-      }
-    } catch {}
-    if (changed) saveUsers(updated);
-    setUsers(updated);
+    };
+    fetchUsers();
   }, []);
 
   const filtered = useMemo(() => {
@@ -177,7 +168,6 @@ export default function UserManagement() {
   const updateUser = (id: string, changes: Partial<MgmtUser>, toastMsg?: string) => {
     setUsers(prev => {
       const next = prev.map(u => u.id === id ? { ...u, ...changes } : u);
-      saveUsers(next);
       const sel = next.find(u => u.id === id) || null;
       setSelected(sel);
       return next;
@@ -197,6 +187,7 @@ export default function UserManagement() {
   return (
     <div className="user-panel">
       <h2 style={{ marginTop: 0 }}>Gestion de Usuarios</h2>
+      {error && <div className="user-toast" role="alert">{error}</div>}
       <input
         className="search-bar"
         placeholder="Buscar por nombre, correo o ID..."
@@ -204,7 +195,11 @@ export default function UserManagement() {
         onChange={(e) => setQuery(e.target.value)}
       />
 
-      <UserTable users={filtered} onSelect={(u) => { setSelected(u); }} />
+      {loading ? (
+        <div style={{ padding: 12 }}>Cargando usuarios...</div>
+      ) : (
+        <UserTable users={filtered} onSelect={(u) => { setSelected(u); }} />
+      )}
 
       {selected && (
         <UserDetailModal

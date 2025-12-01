@@ -23,7 +23,7 @@ const CartContext = React.createContext<CartContextValue | undefined>(undefined)
 
 function getUnitPrice(product: CartProduct) {
   const offer = Number(product.precioOferta ?? NaN);
-  const base = Number(product.precio ?? 0);
+  const base = Number((product as any).precioNormal ?? product.precio ?? 0);
   return Number.isFinite(offer) && offer > 0 && offer < base ? offer : base;
 }
 
@@ -36,10 +36,12 @@ function normalizeItem(raw: any): CartItem | null {
   const normalizedProduct: CartProduct = {
     ...product,
     id: productId,
-    precio: Number(product.precio ?? raw.precio ?? 0),
+    precio: Number((product as any).precioNormal ?? product.precio ?? raw.precio ?? 0),
+    precioNormal: Number((product as any).precioNormal ?? product.precio ?? raw.precio ?? 0),
     precioOferta: raw.precioOferta ?? product.precioOferta ?? null,
     stock: Number.isFinite(stock) ? stock : 0,
-    imagen: product.imagen || (product as any).image,
+    imagen: product.imagen || (product as any).image || (product as any).imageUrl,
+    imageUrl: (product as any).imageUrl || product.imagen,
     images: Array.isArray(product.images) ? product.images : raw.images,
     sku: product.sku || raw.sku,
   };

@@ -48,7 +48,8 @@ export default function Register() {
       if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
       if (!recaptchaToken) { setError('Debes verificar que no eres un robot.'); setLoading(false); return; }
     }
-    const res = await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password, telefono: phone });
+    const cleanPhone = phone ? phone.trim() : '';
+    const res = await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password, telefono: cleanPhone, phone: cleanPhone });
     if (!res.ok) {
       setError(res.error || 'Ocurrio un error');
       if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch {} setRecaptchaToken(null); }

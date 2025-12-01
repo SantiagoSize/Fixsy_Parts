@@ -25,8 +25,8 @@ export function UserTable({ users, onSelect }: Props) {
               <tr key={u.id}>
                 <td>{u.nombre} {u.apellido}</td>
                 <td>{u.email}</td>
-                <td><span className={`role-tag ${u.role.toLowerCase()}`}>{u.role}</span></td>
-                <td><span className={`status ${u.status.toLowerCase()}`}>{u.status}</span></td>
+                <td><span className={`role-tag ${(u.role || 'Usuario').toLowerCase()}`}>{u.role}</span></td>
+                <td><span className={`status ${(u.status || 'Activo').toLowerCase()}`}>{u.status}</span></td>
                 <td style={{ fontFamily: 'monospace' }}>{u.id}</td>
                 <td><button className="btn-view" onClick={() => onSelect(u)}>Ver</button></td>
               </tr>

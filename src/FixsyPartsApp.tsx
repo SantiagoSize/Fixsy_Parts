@@ -10,6 +10,7 @@ import { MessagesProvider as MailMessagesProvider } from './messages/MessagesCon
 import { OrdersProvider } from './context/OrdersContext';
 import { useToast } from './hooks/useToast';
 import { useInitDemoData } from './utils/initDemoData';
+import { ResponsiveProvider } from './context/ResponsiveContext';
 // Error popup eliminado temporalmente
 
 function AppShell() {
@@ -18,9 +19,9 @@ function AppShell() {
   const isHome = location.pathname === '/';
   const { ToastContainer } = useToast();
   return (
-    <div className="app-container">
+    <div className="app-container container-fluid d-flex flex-column min-vh-100 p-0">
       <NavBar />
-      <main className={`app-main ${isHome ? 'app-main--home' : ''}`}>
+      <main className={`app-main ${isHome ? 'app-main--home' : ''} container-fluid flex-grow-1 py-3`}>
         <AppRoutes />
       </main>
       {!isDashboard && <Footer />}
@@ -39,9 +40,11 @@ function FixsyPartsApp() {
         <MailMessagesProvider>
           <OrdersProvider>
             <CartProvider>
-              <BrowserRouter>
-                <AppShell />
-              </BrowserRouter>
+              <ResponsiveProvider>
+                <BrowserRouter>
+                  <AppShell />
+                </BrowserRouter>
+              </ResponsiveProvider>
             </CartProvider>
           </OrdersProvider>
         </MailMessagesProvider>

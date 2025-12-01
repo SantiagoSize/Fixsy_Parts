@@ -14,7 +14,6 @@ type ProfileForm = {
   lastName: string;
   profilePic: string;
   phone: string;
-  landline: string;
 };
 
 export default function Profile() {
@@ -25,7 +24,6 @@ export default function Profile() {
     lastName: user?.apellido || '',
     profilePic: '',
     phone: '',
-    landline: '',
   });
   const [loadingPic, setLoadingPic] = React.useState(false);
   const [loadingProfile, setLoadingProfile] = React.useState(false);
@@ -53,7 +51,6 @@ export default function Profile() {
         lastName,
         profilePic: avatarUrl,
         phone: data?.telefono ?? data?.phone ?? '',
-        landline: data?.telefonoFijo ?? data?.landline ?? '',
       });
       setSessionUser({ ...user, nombre: firstName, apellido: lastName, profilePic: avatarUrl });
     } catch (err: any) {
@@ -82,7 +79,7 @@ export default function Profile() {
         nombre: profile.firstName.trim(),
         apellido: profile.lastName.trim(),
         telefono: profile.phone.trim(),
-        telefonoFijo: profile.landline.trim(),
+        email: user.email,
       };
       const response = await fetch(`${USERS_API_BASE}/api/users/${user.id}`, {
         method: 'PUT',
@@ -101,7 +98,6 @@ export default function Profile() {
         firstName,
         lastName,
         phone: data?.telefono ?? data?.phone ?? profile.phone,
-        landline: data?.telefonoFijo ?? data?.landline ?? profile.landline,
         profilePic: avatarUrl,
       };
       setProfile(updated);
@@ -193,7 +189,6 @@ export default function Profile() {
 
           <PhonesEditor
             phone={profile.phone}
-            landline={profile.landline}
             onChange={(k, v) => handleUpdate(k, v)}
           />
 

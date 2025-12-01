@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PRODUCTS, type Product } from '../../data/products';
+import { PRODUCTS } from '../../data/products';
+import { Product } from '../../types/product';
 import ProductItem from '../../components/ProductItem';
 
 function BestProductsComponent(): React.ReactElement {
@@ -60,7 +61,15 @@ function BestProductsComponent(): React.ReactElement {
         {visible.map((p: Product) => (
           <ProductItem
             key={p.id}
-            product={{ id: p.id, nombre: p.nombre, precio: p.precio, imagen: p.imagen, images: p.images }}
+            product={{
+              id: p.id,
+              nombre: p.nombre,
+              precio: (p as any).precioNormal ?? (p as any).precio ?? 0,
+              precioOferta: (p as any).precioOferta,
+              imagen: (p as any).imageUrl ?? p.imagen,
+              imageUrl: (p as any).imageUrl ?? p.imagen,
+              images: p.images,
+            }}
             onClick={() => navigate(`/product/${p.id}`)}
           />
         ))}

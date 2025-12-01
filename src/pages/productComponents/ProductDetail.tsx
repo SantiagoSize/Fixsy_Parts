@@ -6,6 +6,8 @@ import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './ProductDetail.css';
 import { apiFetch, PRODUCTS_API_BASE } from '../../utils/api';
 import { Product } from '../../types/product';
+import { getProductImages, getProductPlaceholder } from '../../utils/productImages';
+import placeholderProduct from '../../assets/placeholder-product.png';
 
 function ProductDetail(): React.ReactElement {
   const { id } = useParams();
@@ -16,12 +18,13 @@ function ProductDetail(): React.ReactElement {
   const [error, setError] = React.useState<string | null>(null);
   const [current, setCurrent] = React.useState(0);
   const [quantity, setQuantity] = React.useState<number>(1);
+  const galleryRef = React.useRef<HTMLDivElement | null>(null);
 
   const images = React.useMemo(() => {
     if (!product) return [];
-    const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
-    if (list.length === 0 && product.imagen) list.push(product.imagen);
-    return list;
+    const pics = getProductImages(product);
+    if (!pics.length && product.imageUrl) return [product.imageUrl];
+    return pics;
   }, [product]);
 
   const hasMultiple = images.length > 1;
@@ -33,10 +36,29 @@ function ProductDetail(): React.ReactElement {
       setError(null);
       try {
         const data = await apiFetch<Product>(`${PRODUCTS_API_BASE}/api/products/${id}`);
+        const basePrice = Number((data as any).precioNormal ?? (data as any).precio ?? 0) || 0;
+        const imageUrl = (data as any).imageUrl || (data as any).imagen || '';
+        const tags = Array.isArray((data as any).tags)
+          ? (data as any).tags
+          : typeof (data as any).tags === 'string'
+            ? (data as any).tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+            : [];
+
         const normalized: Product = {
           ...data,
-          images: Array.isArray(data.images) ? data.images.filter(Boolean) : data.imagen ? [data.imagen] : [],
-          imagen: data.images && Array.isArray(data.images) && data.images[0] ? data.images[0] : data.imagen,
+          id: Number(data.id),
+          slug: (data as any).slug || data.nombre?.toLowerCase().replace(/\s+/g, '-') || String(data.id),
+          categoria: (data as any).categoria || (data as any).categoriaNombre || 'Repuesto',
+          precioNormal: basePrice,
+          precio: basePrice,
+          precioOferta: (data as any).precioOferta ?? (data as any).offerPrice,
+          imageUrl,
+          imagen: imageUrl,
+          images: Array.isArray(data.images) ? data.images.filter(Boolean) : (imageUrl ? [imageUrl] : []),
+          descripcion: data.descripcion ?? data.descripcionCorta,
+          descripcionCorta: data.descripcionCorta ?? data.descripcion,
+          descripcionLarga: data.descripcionLarga ?? data.descripcion,
+          tags,
         };
         setProduct(normalized);
       } catch (err: any) {
@@ -54,18 +76,16 @@ function ProductDetail(): React.ReactElement {
     return () => window.clearInterval(idTimer);
   }, [hasMultiple, images.length]);
 
+  React.useEffect(() => {
+    if (current >= images.length) setCurrent(0);
+  }, [images.length, current]);
+
   if (loading) return <div className="pd-container">Cargando producto...</div>;
   if (error) return <div className="pd-container">{error}</div>;
   if (!product) return <div className="pd-container">Datos del producto no disponibles.</div>;
 
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'>` +
-    `<rect width='100%' height='100%' fill='%23f2f1f2'/>` +
-    `<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='24'>Imagen</text>` +
-    `</svg>`;
-  const placeholderSrc = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-
+  const placeholderSrc = placeholderProduct || getProductPlaceholder(product.nombre);
   const displayPrice = getDisplayPrice(product as any);
-
   const inCartQty = items.find(ci => String(ci.productId) === String(product.id))?.quantity ?? 0;
   const available = Math.max(0, (product.stock ?? 0) - inCartQty);
   const isAvailable = (product.isActive !== false) && (product.stock ?? 0) > 0;
@@ -79,13 +99,14 @@ function ProductDetail(): React.ReactElement {
     addToCart({
       id: product.id,
       nombre: product.nombre,
-      descripcion: product.descripcion,
-      precio: product.precio,
+      descripcion: product.descripcion ?? product.descripcionCorta,
+      precio: (product as any).precioNormal ?? (product as any).precio ?? 0,
       precioOferta: product.precioOferta ?? undefined,
       stock: product.stock,
-      imagen: product.imagen,
+      imagen: product.imageUrl || product.imagen || '',
+      imageUrl: product.imageUrl || product.imagen || '',
       images: product.images,
-      sku: product.sku,
+      sku: (product as any).sku,
     }, qty);
     try { toast('Producto agregado al carrito'); } catch {}
   };
@@ -96,13 +117,14 @@ function ProductDetail(): React.ReactElement {
       addToCart({
         id: product.id,
         nombre: product.nombre,
-        descripcion: product.descripcion,
-        precio: product.precio,
+        descripcion: product.descripcion ?? product.descripcionCorta,
+        precio: (product as any).precioNormal ?? (product as any).precio ?? 0,
         precioOferta: product.precioOferta ?? undefined,
         stock: product.stock,
-        imagen: product.imagen,
+        imagen: product.imageUrl || product.imagen || '',
+        imageUrl: product.imageUrl || product.imagen || '',
         images: product.images,
-        sku: product.sku,
+        sku: (product as any).sku,
       }, qty);
     }
     navigate('/checkout');
@@ -110,8 +132,18 @@ function ProductDetail(): React.ReactElement {
 
   const goPrev = () => setCurrent((idx) => (idx - 1 + images.length) % images.length);
   const goNext = () => setCurrent((idx) => (idx + 1) % images.length);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goPrev();
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      goNext();
+    }
+  };
 
-  const currentSrc = images[current] || placeholderSrc;
+  const currentSrc = images[current] || product.imageUrl || placeholderSrc;
   const category = (product as any).categoria || (product as any).categoriaNombre || 'Repuesto';
   const rawTags = (product as any).tags;
   const tags = Array.isArray(rawTags)
@@ -135,9 +167,25 @@ function ProductDetail(): React.ReactElement {
     <main className="pd-shell">
       <section className="productDetail">
         <div className="productDetail__top">
-          <div className="productDetail__gallery">
+          <div
+            className="productDetail__gallery"
+            tabIndex={0}
+            ref={galleryRef}
+            onKeyDown={handleKeyDown}
+            role="region"
+            aria-label="Galería de imágenes del producto"
+          >
             <div className="pd-image__wrap">
-              <img src={currentSrc} alt={product.nombre} className="pd-image__main" />
+              <img
+                src={currentSrc}
+                alt={product.nombre}
+                className="pd-image__main"
+                onError={(e) => {
+                  const imgEl = e.currentTarget as HTMLImageElement;
+                  imgEl.onerror = null;
+                  imgEl.src = placeholderSrc;
+                }}
+              />
               {hasMultiple && (
                 <>
                   <button className="pd-nav pd-nav--prev" onClick={goPrev} aria-label="Anterior">&lt;</button>
@@ -149,12 +197,20 @@ function ProductDetail(): React.ReactElement {
               <div className="pd-thumbs">
                 {images.map((img, idx) => (
                   <button
-                    key={img}
+                    key={`${img}-${idx}`}
                     className={`pd-thumb ${idx === current ? 'is-active' : ''}`}
                     onClick={() => setCurrent(idx)}
                     aria-label={`Imagen ${idx + 1}`}
                   >
-                    <img src={img || placeholderSrc} alt={`Vista ${idx + 1}`} />
+                    <img
+                      src={img || placeholderSrc}
+                      alt={`${product.nombre} - imagen ${idx + 1}`}
+                      onError={(e) => {
+                        const imgEl = e.currentTarget as HTMLImageElement;
+                        imgEl.onerror = null;
+                        imgEl.src = placeholderSrc;
+                      }}
+                    />
                   </button>
                 ))}
               </div>
@@ -168,13 +224,15 @@ function ProductDetail(): React.ReactElement {
               {(product as any).isFeatured && <span className="catalog-chip catalog-chip--tag is-featured">Destacado</span>}
             </div>
             <h1 className="pd-title">{product.nombre}</h1>
-            <div className="pd-rating">⭐⭐⭐⭐☆ <span className="pd-rating__hint">Calificación</span></div>
+            <div className="pd-rating">★★★★★ <span className="pd-rating__hint">Calificación</span></div>
             {highlightList.length > 0 && (
               <ul className="pd-highlights">
                 {highlightList.map((item, idx) => <li key={idx}>{item}</li>)}
               </ul>
             )}
-            <p className="pd-desc">{product.descripcion}</p>
+            <p className="pd-desc">
+              {product.descripcionLarga || product.descripcion || product.descripcionCorta || 'Sin descripción disponible.'}
+            </p>
           </div>
 
           <aside className="productDetail__buyBox">
@@ -188,7 +246,7 @@ function ProductDetail(): React.ReactElement {
                   )}
                 </div>
               ) : (
-                <div className="price">{formatPrice(displayPrice?.final || product.precio)}</div>
+                <div className="price">{formatPrice(displayPrice?.final || (product as any).precioNormal || 0)}</div>
               )}
             </div>
             <p className="pd-stock">
@@ -214,7 +272,7 @@ function ProductDetail(): React.ReactElement {
             <div className="pd-actions">
               <button className="pd-btn add" onClick={handleAdd} disabled={!isAvailable}>Agregar al carrito</button>
               <button className="pd-btn buy" onClick={handleBuyNow} disabled={!isAvailable}>Comprar ahora</button>
-              <button className="pd-btn back" type="button" onClick={() => navigate('/catalog')}>Volver al catálogo</button>
+              <button className="pd-btn back" type="button" onClick={() => navigate('/catalogo')}>Volver al catálogo</button>
             </div>
             <div className="pd-help">
               <p>🚚 Envíos a todo Chile</p>
@@ -226,7 +284,7 @@ function ProductDetail(): React.ReactElement {
         <section className="productDetail__bottom">
           <div className="productDetail__description card">
             <h2>Descripción del producto</h2>
-            <p>{product.descripcion || 'Sin descripción disponible.'}</p>
+            <p>{product.descripcionLarga || product.descripcion || product.descripcionCorta || 'Sin descripción disponible.'}</p>
           </div>
 
           <div className="productDetail__specs card">

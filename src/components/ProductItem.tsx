@@ -8,6 +8,7 @@ export type ProductLike = {
   precio: number;
   precioOferta?: number;
   descripcion?: string;
+  imageUrl?: string;
   imagen?: string;
   images?: string[];
   stock?: number;
@@ -27,8 +28,9 @@ export default function ProductItem({ product, variant = 'catalog', actions, onC
   const images = React.useMemo(() => {
     const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
     if (list.length === 0 && product.imagen) list.push(product.imagen);
+    if (list.length === 0 && product.imageUrl) list.push(product.imageUrl);
     return list;
-  }, [product.images, product.imagen]);
+  }, [product.images, product.imagen, product.imageUrl]);
   const imageSrc = images[0] || '';
 
   const wrapperClass = `product-card ${variant === 'compact' ? 'product-card--compact' : 'product-card--catalog'} ${onClick ? 'product-card--clickable' : ''}`;

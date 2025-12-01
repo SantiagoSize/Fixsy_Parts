@@ -18,15 +18,18 @@ function CartView(): React.ReactElement {
   const cartProducts: CartItemData[] = items.map((it) => ({
     id: it.productId,
     nombre: it.product.nombre,
-    precio: it.product.precio,
+    precio: (it.product as any).precioNormal ?? it.product.precio ?? 0,
     precioOferta: (it.product as any).precioOferta,
     cantidad: it.quantity,
-    stock: it.product.stock,
-    imagen: Array.isArray(it.product.images) && it.product.images[0] ? it.product.images[0] : it.product.imagen,
+    stock: it.product.stock ?? 0,
+    imagen: Array.isArray(it.product.images) && it.product.images[0] ? it.product.images[0] : (it.product as any).imageUrl || it.product.imagen,
   }));
 
   const subtotal = items.reduce((sum, it) => {
-    const display = getDisplayPrice({ precio: it.product.precio, precioOferta: (it.product as any).precioOferta });
+    const display = getDisplayPrice({
+      precioNormal: (it.product as any).precioNormal ?? it.product.precio ?? 0,
+      precioOferta: (it.product as any).precioOferta,
+    });
     const unit = it.unitPrice ?? display.final;
     return sum + unit * it.quantity;
   }, 0);

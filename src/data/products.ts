@@ -1,73 +1,79 @@
-export interface Product {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  precio: number;
-  precioOferta?: number;
-  stock: number;
-  tags: string[];
-  imagen?: string; // placeholder por ahora
-  images?: string[];
-}
+import { Product } from '../types/product';
 
 export const PRODUCTS: Product[] = [
   {
     id: 1,
     nombre: 'Filtro de aceite',
-    descripcion: 'Filtro de aceite estándar para motores 1.6-2.0L.',
-    precio: 9990,
+    slug: 'filtro-aceite',
+    descripcionCorta: 'Filtro de aceite estándar para motores 1.6-2.0L.',
+    descripcionLarga: 'Filtro de aceite con alto poder de retención de partículas para motores entre 1.6 y 2.0 litros.',
+    categoria: 'Filtros',
+    precioNormal: 9990,
+    precioOferta: 7990,
     stock: 12,
     tags: ['motor', 'mantenimiento'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=640',
   },
   {
     id: 2,
     nombre: 'Pastillas de freno',
-    descripcion: 'Juego de pastillas delanteras de alto rendimiento.',
-    precio: 19990,
+    slug: 'pastillas-freno',
+    descripcionCorta: 'Juego de pastillas delanteras de alto rendimiento.',
+    categoria: 'Frenos',
+    precioNormal: 19990,
     stock: 20,
     tags: ['frenos', 'seguridad'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=640',
+    descripcionLarga: 'Pastillas con compuesto cerámico para una frenada estable y menor desgaste del disco.',
   },
   {
     id: 3,
     nombre: 'Batería 60Ah',
-    descripcion: 'Batería libre de mantención, 60Ah, terminal estándar.',
-    precio: 79990,
+    slug: 'bateria-60ah',
+    descripcionCorta: 'Batería libre de mantención, 60Ah, terminal estándar.',
+    categoria: 'Baterías',
+    precioNormal: 79990,
+    precioOferta: 69990,
     stock: 8,
     tags: ['eléctrico'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1519558260268-cde7e03a0152?w=640',
   },
   {
     id: 4,
     nombre: 'Amortiguador delantero',
-    descripcion: 'Amortiguador hidráulico para eje delantero.',
-    precio: 49990,
+    slug: 'amortiguador-delantero',
+    descripcionCorta: 'Amortiguador hidráulico para eje delantero.',
+    categoria: 'Suspensión',
+    precioNormal: 49990,
     stock: 6,
     tags: ['suspensión'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=640',
   },
   {
     id: 5,
     nombre: 'Filtro de aire',
-    descripcion: 'Filtro de aire lavable de alto flujo.',
-    precio: 14990,
+    slug: 'filtro-aire',
+    descripcionCorta: 'Filtro de aire lavable de alto flujo.',
+    categoria: 'Filtros',
+    precioNormal: 14990,
     stock: 15,
     tags: ['motor', 'mantenimiento'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=640&auto=format',
   },
   {
     id: 6,
     nombre: 'Aceite 5W-30',
-    descripcion: 'Aceite sintético, bidón 4L.',
-    precio: 25990,
+    slug: 'aceite-5w30',
+    descripcionCorta: 'Aceite sintético, bidón 4L.',
+    categoria: 'Aceites',
+    precioNormal: 25990,
+    precioOferta: 22990,
     stock: 10,
     tags: ['lubricantes', 'motor'],
-    imagen: undefined,
+    imageUrl: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=640',
   },
 ];
 
 export function getProductById(id: number): Product | undefined {
   return PRODUCTS.find(p => p.id === id);
 }
-

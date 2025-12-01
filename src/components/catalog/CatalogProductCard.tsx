@@ -1,6 +1,8 @@
 import React from 'react';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
 import { CatalogProduct } from '../ProductItem';
+import { getProductImages, getProductPlaceholder } from '../../utils/productImages';
+import placeholderProduct from '../../assets/placeholder-product.png';
 
 export type CatalogCardVariant = 'grid' | 'list';
 
@@ -25,17 +27,23 @@ function buildPlaceholder(nombre: string) {
 }
 
 export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }: Props) {
-  const images = React.useMemo(() => {
-    const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
-    if (list.length === 0 && product.imagen) list.push(product.imagen);
-    return list;
-  }, [product.images, product.imagen]);
+  const [hoverIndex, setHoverIndex] = React.useState(0);
+  const hoverTimer = React.useRef<number | null>(null);
 
-  const imageSrc = images[0] || buildPlaceholder(product.nombre);
+  const images = React.useMemo(() => {
+    const list = getProductImages(product);
+    const main = product.imageUrl ? [product.imageUrl] : [];
+    const merged = [...main, ...list].filter(Boolean);
+    return merged.length ? merged : [];
+  }, [product]);
+
+  const placeholder = React.useMemo(() => getProductPlaceholder(product.nombre), [product.nombre]);
+  const imageSrc = images[0] || product.imageUrl || placeholderProduct || placeholder;
   const displayPrice = getDisplayPrice(product as any);
   const hasOffer = Boolean(product.isOffer || displayPrice.hasDiscount);
   const isAvailable = (product.isActive ?? true) && (product.stock ?? 0) > 0;
   const tagList = Array.isArray(product.tags) ? product.tags : [];
+  const visibleTags = tagList.slice(0, 2);
   const isList = variant === 'list';
   const isGrid = variant === 'grid';
   const discountPct = displayPrice.discountPercentage ?? (
@@ -50,12 +58,46 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
   };
 
   const cardClass = `catalog-card ${isList ? 'catalog-card--list' : 'catalog-card--grid'}`;
+  const currentImage = images[(hoverIndex % Math.max(images.length, 1))] || imageSrc;
+
+  const startHoverCycle = React.useCallback(() => {
+    if (images.length <= 1) return;
+    if (hoverTimer.current) return;
+    hoverTimer.current = window.setInterval(() => {
+      setHoverIndex((prev) => (prev + 1) % images.length);
+    }, 1500);
+  }, [images.length]);
+
+  const stopHoverCycle = React.useCallback(() => {
+    if (hoverTimer.current) {
+      window.clearInterval(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    setHoverIndex(0);
+  }, []);
+
+  React.useEffect(() => () => stopHoverCycle(), [stopHoverCycle]);
 
   return (
-    <article className={cardClass}>
+    <article
+      className={cardClass}
+      onMouseEnter={startHoverCycle}
+      onMouseLeave={stopHoverCycle}
+      onFocus={startHoverCycle}
+      onBlur={stopHoverCycle}
+    >
       <div className="catalog-card__imageWrap">
         {hasOffer && <span className="catalog-card__badge">Oferta</span>}
-        <img src={imageSrc} alt={product.nombre} className="catalog-card__image" />
+        <img
+          src={currentImage}
+          alt={product.nombre}
+          className="catalog-card__image"
+          onError={(e) => {
+            const imgEl = e.currentTarget as HTMLImageElement;
+            imgEl.onerror = null;
+            imgEl.src = placeholderProduct || placeholder;
+          }}
+        />
       </div>
 
       <div className="catalog-card__content">
@@ -76,9 +118,11 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
             </div>
             <div className="catalog-card__row catalog-card__row--bottom">
               <div className="catalog-card__cell">
-                <span className="catalog-card__priceOriginal">
-                  {displayPrice.hasDiscount ? formatPrice(displayPrice.original) : formatPrice(displayPrice.final)}
-                </span>
+                {displayPrice.hasDiscount && (
+                  <span className="catalog-card__priceOriginal">
+                    {formatPrice(displayPrice.original)}
+                  </span>
+                )}
               </div>
               <div className="catalog-card__cell catalog-card__cell--right">
                 <span className="catalog-card__stock catalog-card__stock--grid">
@@ -105,9 +149,9 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
             <p className="catalog-card__stock">
               {isAvailable ? `Stock: ${product.stock ?? 0}` : 'Sin stock'}
             </p>
-            {isList && tagList.length > 0 && (
+            {isList && visibleTags.length > 0 && (
               <div className="catalog-card__tags">
-                {tagList.slice(0, 2).map(tag => (
+                {visibleTags.map(tag => (
                   <span key={tag} className="catalog-chip catalog-chip--tag">#{tag}</span>
                 ))}
               </div>

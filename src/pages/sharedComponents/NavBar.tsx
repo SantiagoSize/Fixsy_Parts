@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useMessages } from '../../context/MessagesContext';
+import { useResponsive } from '../../hooks/useResponsive';
 
 function NavBar() {
   const location = useLocation();
@@ -13,6 +14,7 @@ function NavBar() {
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
   const { unreadCount } = useMessages();
+  const { isMobile } = useResponsive();
   const [openMenu, setOpenMenu] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const count = items.reduce((sum, it) => sum + it.quantity, 0);
@@ -28,9 +30,17 @@ function NavBar() {
     goCatalog(search.trim() || undefined);
   };
 
+  React.useEffect(() => {
+    setOpenMenu(false);
+  }, [location.pathname, isMobile]);
+
+  const barClass = `navbar__bar ${isMobile ? 'navbar__bar--stack' : ''}`;
+  const searchClass = `navbar__search ${isMobile ? 'navbar__search--full' : ''}`;
+  const actionsClass = `navbar__actions ${isMobile ? 'navbar__actions--spread' : ''}`;
+
   return (
-    <header className="navbar">
-      <div className="navbar__bar">
+    <header className="navbar navbar-expand-lg">
+      <div className={`${barClass} container-xxl`}>
         <div
           className="navbar__brand"
           onClick={() => navigate('/')}
@@ -47,15 +57,16 @@ function NavBar() {
           </div>
         </div>
 
-        <form className="navbar__search" onSubmit={handleSearchSubmit} role="search">
+        <form className={`${searchClass} d-flex flex-grow-1 gap-2`} onSubmit={handleSearchSubmit} role="search">
           <input
             type="search"
             placeholder="Buscar repuestos..."
             aria-label="Buscar repuestos"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="form-control"
           />
-          <button type="submit" className="search-button" aria-label="Buscar">
+          <button type="submit" className="search-button btn btn-light d-flex align-items-center" aria-label="Buscar">
             <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="7" fill="none" strokeWidth="1.8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" strokeWidth="1.8" strokeLinecap="round" />
@@ -63,9 +74,9 @@ function NavBar() {
           </button>
         </form>
 
-        <div className="navbar__actions">
+        <div className={`${actionsClass} d-flex align-items-center`}>
           <button
-            className="icon-button cart-button"
+            className="icon-button cart-button btn btn-light"
             aria-label="Carrito"
             onClick={() => navigate('/cart')}
           >
@@ -82,7 +93,7 @@ function NavBar() {
           </button>
           <div style={{ position: 'relative' }}>
             <button
-              className="icon-button profile-button"
+              className="icon-button profile-button btn btn-warning text-white"
               aria-label="Cuenta"
               onClick={() => {
                 if (!isAuthenticated) {
@@ -107,6 +118,7 @@ function NavBar() {
                   position: 'absolute', top: '110%', right: 0,
                   background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12,
                   boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 160,
+                  zIndex: 60,
                 }}
               >
                 <button

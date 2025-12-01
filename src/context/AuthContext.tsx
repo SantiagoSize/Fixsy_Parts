@@ -39,8 +39,13 @@ function persistSession(value: SessionUser | null) {
   });
 }
 
-function mapRole(value: any): Role {
-  if (value === 'Admin' || value === 'Soporte') return value;
+function mapRole(value: any, roleId?: any): Role {
+  const id = Number(roleId);
+  if (id === 2) return 'Admin';
+  if (id === 3) return 'Soporte';
+  const v = String(value || '').toLowerCase();
+  if (v.includes('admin')) return 'Admin';
+  if (v.includes('soporte') || v.includes('support')) return 'Soporte';
   return 'Usuario';
 }
 
@@ -48,12 +53,21 @@ function mapApiUser(raw: any): SessionUser {
   const source = raw?.user ?? raw;
   const idValue = source?.id ?? source?.userId ?? source?.uid;
   const token = source?.token ?? raw?.token ?? raw?.accessToken;
+  const email = source?.email ?? '';
+  const rawRole = source?.role ?? source?.rol ?? source?.authority ?? source?.roleName ?? source?.role?.name;
+  const rawRoleId = source?.roleId ?? source?.role_id ?? source?.role?.id;
+  const forcedRole = (() => {
+    const lower = String(email).toLowerCase();
+    if (lower === 'admin@admin.fixsy.com') return 'Admin';
+    if (lower === 'soporte@soporte.fixsy.com') return 'Soporte';
+    return null;
+  })();
   return {
     id: idValue ? String(idValue) : '',
     nombre: source?.nombre ?? source?.firstName ?? '',
     apellido: source?.apellido ?? source?.lastName ?? '',
-    email: source?.email ?? '',
-    role: mapRole(source?.role ?? source?.rol ?? source?.authority),
+    email,
+    role: forcedRole ? (forcedRole as Role) : mapRole(rawRole, rawRoleId),
     profilePic: source?.profilePic || source?.avatarUrl || source?.avatar || undefined,
     token,
   };
@@ -80,14 +94,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = React.useCallback(async (email: string, password: string) => {
     const payload: LoginPayload = { email: email.trim(), password };
-    const result = await safeApiCall<AuthSessionResponse | UserProfileResponse>('/api/auth/login', {
+    const result = await safeApiCall<AuthSessionResponse | UserProfileResponse>('/api/users/login', {
       method: 'POST',
       json: payload,
     });
 
     if (!result.ok) {
       const unauthorized = result.status === 401 || result.status === 403;
-      const message = unauthorized ? 'Credenciales invalidas' : (result.error || 'No se pudo iniciar sesion');
+      const message = result.error || (unauthorized ? 'Credenciales invalidas' : 'No se pudo iniciar sesion');
       return { ok: false, status: result.status, error: message };
     }
 
@@ -97,8 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [safeApiCall, setSessionUser]);
 
   const register = React.useCallback(async (newUser: RegisterPayload) => {
-    const payload = { ...newUser, email: newUser.email.trim() };
-    const result = await safeApiCall('/api/auth/register', { method: 'POST', json: payload });
+    const phoneValue = newUser.phone ?? newUser.telefono ?? '';
+    const payload = { ...newUser, email: newUser.email.trim(), phone: phoneValue, telefono: phoneValue };
+    const result = await safeApiCall('/api/users/register', { method: 'POST', json: payload });
 
     if (!result.ok) {
       const generic = result.status === 400 ? 'Datos invalidos' : 'No se pudo completar el registro';

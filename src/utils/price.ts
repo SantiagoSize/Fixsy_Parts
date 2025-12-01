@@ -6,7 +6,7 @@ export interface DisplayPrice {
   discountPercentage?: number;
 }
 
-type PriceLike = { precio: number; precioOferta?: number };
+type PriceLike = { precio?: number; precioNormal?: number; precioOferta?: number; offerPrice?: number };
 
 export function formatPrice(value: number): string {
   try {
@@ -17,7 +17,8 @@ export function formatPrice(value: number): string {
 }
 
 export function getDisplayPrice<T extends PriceLike>(product: T): DisplayPrice {
-  const original = Number(product?.precio ?? 0);
+  const base = product?.precioNormal ?? product?.precio ?? 0;
+  const original = Number(base);
   const offer = Number((product as any).precioOferta ?? (product as any).offerPrice ?? NaN);
   const hasDiscount = Number.isFinite(offer) && offer > 0 && offer < original;
   if (hasDiscount) {

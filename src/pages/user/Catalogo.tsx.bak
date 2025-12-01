@@ -11,7 +11,6 @@ import { CatalogCardProduct } from '../../components/catalog/CatalogProductCard'
 import Pagination from '../../components/catalog/Pagination';
 import { ProductModal } from '../../components/ProductModal';
 import { getDisplayPrice } from '../../utils/price';
-import { useResponsive } from '../../hooks/useResponsive';
 
 type NormalizedProduct = CatalogCardProduct & {
   categoria: string;
@@ -32,20 +31,16 @@ const OFFICIAL_CATEGORIES = [
   'Filtros',
   'Frenos',
   'Aceites',
-  'Baterias',
-  'Suspension',
-  'Iluminacion',
+  'Baterías',
+  'Suspensión',
+  'Iluminación',
   'Accesorios',
-  'Electrico',
+  'Eléctrico',
 ] as const;
-const VALID_CATEGORIES = new Set<string>([CATEGORY_ALL, ...OFFICIAL_CATEGORIES]);
 
 function normalizeCategory(raw?: string): string {
   const value = (raw || '').toLowerCase().trim();
-  const clean = typeof value.normalize === 'function'
-    ? value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    : value;
-  switch (clean) {
+  switch (value) {
     case 'filtros':
       return 'Filtros';
     case 'freno':
@@ -56,31 +51,24 @@ function normalizeCategory(raw?: string): string {
       return 'Aceites';
     case 'bateria':
     case 'baterias':
-      return 'Baterias';
+    case 'batería':
+    case 'baterías':
+      return 'Baterías';
     case 'suspencion':
-    case 'suspension':
-      return 'Suspension';
+    case 'suspensión':
+      return 'Suspensión';
     case 'iluminacion':
-      return 'Iluminacion';
+    case 'iluminación':
+      return 'Iluminación';
     case 'accesorio':
     case 'accesorios':
       return 'Accesorios';
     case 'electrico':
-      return 'Electrico';
+    case 'eléctrico':
+      return 'Eléctrico';
     default:
       return raw || 'Otros';
   }
-}
-
-function normalizeCategoryParam(raw?: string | null): string {
-  if (!raw) return CATEGORY_ALL;
-  const trimmed = raw.trim();
-  const lower = trimmed.toLowerCase();
-  if (!trimmed || lower === 'null' || lower === 'undefined') return CATEGORY_ALL;
-  if (lower === CATEGORY_ALL) return CATEGORY_ALL;
-
-  const normalized = normalizeCategory(trimmed);
-  return VALID_CATEGORIES.has(normalized) ? normalized : CATEGORY_ALL;
 }
 
 function normalizeTags(raw?: string[] | string): string[] {
@@ -133,23 +121,17 @@ function finalPrice(product: CatalogCardProduct) {
 export default function Catalogo(): React.ReactElement {
   const { addToCart } = useCart();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useResponsive();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = React.useState<NormalizedProduct[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [view, setView] = React.useState<NormalizedProduct | null>(null);
-  const [selectedCategory, setSelectedCategory] = React.useState<string>(() =>
-    normalizeCategoryParam(searchParams.get('categoria'))
-  );
+  const initialCat = normalizeCategory(searchParams.get('categoria') || '');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>(initialCat || CATEGORY_ALL);
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   const [searchTerm, setSearchTerm] = React.useState(() => searchParams.get('q') || '');
   const [sortOption, setSortOption] = React.useState<SortOption>('featured');
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>(() =>
-    typeof window !== 'undefined' && window.innerWidth <= 720 ? 'list' : 'grid'
-  );
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   React.useEffect(() => {
     const loadProducts = async () => {
@@ -157,21 +139,12 @@ export default function Catalogo(): React.ReactElement {
       setError(null);
       try {
         const data = await apiFetch<Product[]>(PRODUCTS_API_BASE, '/api/products');
-        if (!Array.isArray(data)) {
-          throw new Error('La respuesta de productos no es valida.');
-        }
         const normalized = data
           .map((p, idx) => normalizeProduct(p, idx))
           .filter(p => p.isActive !== false);
-        const safeProducts = normalized.filter(p => {
-          const hasId = p.id !== null && p.id !== undefined;
-          const slug = typeof p.slug === 'string' ? p.slug.trim() : '';
-          const name = typeof p.nombre === 'string' ? p.nombre.trim() : '';
-          return hasId && slug.length > 0 && name.length > 0;
-        });
-        setProducts(safeProducts);
+        setProducts(normalized);
       } catch (err: any) {
-        setError(err?.message || 'No se pudo cargar el catalogo.');
+        setError(err?.message || 'No se pudo cargar el catálogo.');
         setProducts([]);
       } finally {
         setLoading(false);
@@ -185,38 +158,25 @@ export default function Catalogo(): React.ReactElement {
     if (paramSearch !== searchTerm) {
       setSearchTerm(paramSearch);
     }
-    const paramCategory = normalizeCategoryParam(searchParams.get('categoria'));
-    if (paramCategory !== selectedCategory) {
+    const paramCategory = normalizeCategory(searchParams.get('categoria') || '');
+    if (paramCategory && paramCategory !== selectedCategory) {
       setSelectedCategory(paramCategory);
+    }
+    if (!paramCategory && selectedCategory !== CATEGORY_ALL) {
+      setSelectedCategory(CATEGORY_ALL);
     }
   }, [searchParams]);
 
   React.useEffect(() => {
     const params = new URLSearchParams();
-    const trimmedSearch = searchTerm.trim();
-    if (trimmedSearch) params.set('q', trimmedSearch);
-    if (selectedCategory !== CATEGORY_ALL && VALID_CATEGORIES.has(selectedCategory)) {
-      params.set('categoria', selectedCategory);
-    }
-    const next = params.toString();
-    const current = searchParams.toString();
-    if (next !== current) {
-      setSearchParams(params);
-    }
-  }, [searchTerm, selectedCategory, setSearchParams, searchParams]);
+    if (searchTerm) params.set('q', searchTerm);
+    if (selectedCategory && selectedCategory !== CATEGORY_ALL) params.set('categoria', selectedCategory);
+    setSearchParams(params);
+  }, [searchTerm, selectedCategory, setSearchParams]);
 
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedTags, sortOption]);
-
-  React.useEffect(() => {
-    if (isMobile) {
-      setViewMode('list');
-    }
-    if (!isMobile) {
-      setFiltersOpen(false);
-    }
-  }, [isMobile]);
 
   const categories = React.useMemo(() => {
     return [CATEGORY_ALL, ...OFFICIAL_CATEGORIES];
@@ -283,7 +243,7 @@ export default function Catalogo(): React.ReactElement {
     return list;
   }, [products, searchTerm, selectedCategory, selectedTags, sortOption]);
 
-  const itemsPerPage = isMobile ? 6 : isTablet ? 9 : 12;
+  const itemsPerPage = 12;
   const totalItems = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(currentPage, totalPages);
@@ -314,13 +274,7 @@ export default function Catalogo(): React.ReactElement {
     setSelectedTags(prev => prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]);
   };
 
-  const handleView = (p: CatalogCardProduct) => {
-    if (isMobile) {
-      navigate(`/product/${p.id}`);
-    } else {
-      setView(p as NormalizedProduct);
-    }
-  };
+  const handleView = (p: CatalogCardProduct) => navigate(`/product/${p.id}`);
 
   const handleReset = () => {
     setSelectedCategory(CATEGORY_ALL);
@@ -330,106 +284,62 @@ export default function Catalogo(): React.ReactElement {
   };
 
   const hasResults = filteredProducts.length > 0;
-  const layoutClass = `catalog-shell catalog-layout container-xxl row g-4 ${isMobile ? 'catalog-layout--stack' : ''}`;
 
   return (
     <section className="catalog-page">
-      <div className="catalog-hero container-xxl">
+      <div className="catalog-hero">
         <p className="catalog-eyebrow">Fixsy Parts</p>
         <h1 className="catalog-title">Catalogo de productos</h1>
         <p className="catalog-subtitle">Explora repuestos originales y alternativos con filtros rapidos por categoria, tags y ofertas.</p>
       </div>
 
-      <div className="catalog-inline-search container-xxl">
-        <div className="catalog-inline-search__field">
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, categoria o palabra clave..."
-            aria-label="Buscar en catalogo"
-            className="form-control"
+      <div className="catalog-shell catalog-layout">
+        <aside className="catalog-sidebar">
+          <CatalogFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            tags={tags}
+            selectedTags={selectedTags}
+            onToggleTag={toggleTag}
+            sortOption={sortOption}
+            onSortChange={setSortOption}
+            onReset={handleReset}
+            hideSearch
           />
-        </div>
-        <div className="catalog-inline-search__actions">
-          <button type="button" onClick={handleReset} className="catalog-mobile-btn catalog-mobile-btn--ghost btn btn-outline-secondary">
-            Limpiar
-          </button>
-          {isMobile && (
-            <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-btn btn btn-primary">
-              Filtros
-            </button>
-          )}
-        </div>
-      </div>
+        </aside>
 
-      <div className={layoutClass}>
-        {!isMobile && (
-          <aside className="catalog-sidebar col-12 col-lg-3">
-            <CatalogFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              tags={tags}
-              selectedTags={selectedTags}
-              onToggleTag={toggleTag}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
-              onReset={handleReset}
-              hideSearch
-            />
-          </aside>
-        )}
-
-        <div className="catalog-content catalog-results col-12 col-lg-9">
+        <div className="catalog-content catalog-results">
           <div className="catalog-content__top catalog-results__header">
             <div className="catalog-meta">
-              {loading && <span>Cargando catalogo...</span>}
+              {loading && <span>Cargando catálogo…</span>}
               {!loading && error && <span className="catalog-meta__error">{error}</span>}
               {!loading && !error && (
                 <span>{hasResults ? `${filteredProducts.length} productos` : 'Sin resultados con los filtros actuales'}</span>
               )}
             </div>
             <div className="catalog-view">
-              <div className="catalog-view__toggles">
-                <button
-                  type="button"
-                  className={`catalog-view__btn ${viewMode === 'grid' ? 'is-active' : ''}`}
-                  onClick={() => setViewMode('grid')}
-                  aria-pressed={viewMode === 'grid'}
-                >
-                  Grilla
-                </button>
-                <button
-                  type="button"
-                  className={`catalog-view__btn ${viewMode === 'list' ? 'is-active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                  aria-pressed={viewMode === 'list'}
-                >
-                  Lista
-                </button>
-              </div>
               <div className="catalog-view__sort">
                 <label className="catalog-sort__label" htmlFor="catalog-sort-select-inline">Ordenar por</label>
                 <select
                   id="catalog-sort-select-inline"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="catalog-sort__select form-select"
+                  className="catalog-sort__select"
                 >
                   <option value="featured">Destacados</option>
                   <option value="price_asc">Precio: de menor a mayor</option>
                   <option value="price_desc">Precio: de mayor a menor</option>
-                  <option value="recent">Mas recientes</option>
+                  <option value="recent">Más recientes</option>
                 </select>
               </div>
             </div>
           </div>
 
           {loading ? (
-            <div className="catalog-empty">Cargando catalogo...</div>
+            <div className="catalog-empty">Cargando catálogo…</div>
           ) : error ? (
             <div className="catalog-empty">{error}</div>
           ) : (
@@ -440,7 +350,6 @@ export default function Catalogo(): React.ReactElement {
                 emptyMessage="No se encontraron productos para estos filtros."
                 onAdd={handleAdd}
                 onView={handleView}
-                viewMode={viewMode}
               />
               <Pagination
                 currentPage={safePage}
@@ -452,45 +361,6 @@ export default function Catalogo(): React.ReactElement {
           )}
         </div>
       </div>
-
-      {filtersOpen && isMobile && (
-        <div className="catalog-drawer" role="dialog" aria-modal="true" aria-label="Filtros de catalogo">
-          <button
-            type="button"
-            className="catalog-drawer__backdrop"
-            onClick={() => setFiltersOpen(false)}
-            aria-label="Cerrar filtros"
-          />
-          <div className="catalog-drawer__panel">
-            <div className="catalog-drawer__header">
-              <div>
-                <p className="catalog-eyebrow">Filtros</p>
-                <h2 className="catalog-title">Ajusta tu busqueda</h2>
-              </div>
-              <button
-                type="button"
-                className="catalog-mobile-btn catalog-mobile-btn--ghost btn btn-outline-secondary"
-                onClick={() => setFiltersOpen(false)}
-              >
-                Cerrar
-              </button>
-            </div>
-            <CatalogFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              tags={tags}
-              selectedTags={selectedTags}
-              onToggleTag={toggleTag}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
-              onReset={handleReset}
-            />
-          </div>
-        </div>
-      )}
 
       {view && (
         <ProductModal

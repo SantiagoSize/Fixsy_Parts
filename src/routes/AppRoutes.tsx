@@ -18,6 +18,7 @@ import Catalogo from '../pages/user/Catalogo';
 import DashboardLayout from '../dashboard/DashboardLayout';
 import AdminHome from '../dashboard/AdminHome';
 import SupportHome from '../dashboard/SupportHome';
+import AdminProductDashboard from '../pages/admin/AdminProductDashboard';
 import { PrivateRoute, PublicOnlyRoute, RoleRoute } from './guards';
 
 const NotFoundPlaceholder = () => <div style={{ padding: '1rem' }}>404 - No encontrado</div>;
@@ -49,6 +50,7 @@ function AppRoutes(): React.ReactElement {
       <Route path="/compose" element={<RoleRoute allowed={['Soporte']} element={<ComposeMessage />} />} />
       <Route path="/history" element={<PrivateRoute element={<PurchaseHistory />} />} />
       <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
+      <Route path="/admin/products" element={<RoleRoute allowed={['Admin']} element={<AdminProductDashboard />} />} />
       <Route path="*" element={<NotFoundPlaceholder />} />
     </Routes>
   );

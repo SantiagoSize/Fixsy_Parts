@@ -16,6 +16,7 @@ export type RegisterPayload = {
   email: string;
   password: string;
   telefono?: string;
+  phone?: string;
 };
 
 export type LoginPayload = {

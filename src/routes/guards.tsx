@@ -26,6 +26,10 @@ export function PublicOnlyRoute({ element, redirectOverride }: PublicOnlyRoutePr
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return element;
 
-  const defaultRedirect = user?.role === 'Admin' || user?.role === 'Soporte' ? '/dashboard' : '/';
+  const defaultRedirect = user?.role === 'Admin'
+    ? '/dashboard/admin'
+    : user?.role === 'Soporte'
+      ? '/dashboard/support'
+      : '/';
   return <Navigate to={redirectOverride || defaultRedirect} replace />;
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { CatalogProduct } from './ProductItem';
 import './ProductItem.css';
 import { formatPrice, getDisplayPrice } from '../utils/price';
+import placeholderProduct from '../assets/placeholder-product.png';
 
 type Props = {
   product: CatalogProduct;
@@ -12,9 +13,10 @@ type Props = {
 export function ProductModal({ product, onAdd, onClose }: Props) {
   const images = React.useMemo(() => {
     const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+    if (list.length === 0 && product.imageUrl) list.push(product.imageUrl);
     if (list.length === 0 && product.imagen) list.push(product.imagen);
     return list;
-  }, [product.images, product.imagen]);
+  }, [product.images, product.imagen, product.imageUrl]);
 
   const [current, setCurrent] = React.useState(0);
   const hasMultiple = images.length > 1;
@@ -28,7 +30,7 @@ export function ProductModal({ product, onAdd, onClose }: Props) {
   const goPrev = () => setCurrent((idx) => (idx - 1 + images.length) % images.length);
   const goNext = () => setCurrent((idx) => (idx + 1) % images.length);
 
-  const placeholderSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
+  const placeholderSvg = placeholderProduct || `data:image/svg+xml;utf8,${encodeURIComponent(
     "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%236b7280' font-size='14'>Sin imagen</text></svg>"
   )}`;
 
@@ -40,7 +42,16 @@ export function ProductModal({ product, onAdd, onClose }: Props) {
       <div className="cat__modalCard">
         <div className="cat__modalImage">
           <div className="product-image-wrap product-image-wrap--regular" style={{ height: '400px' }}>
-            <img className="product-image" src={images[current] || placeholderSvg} alt={product.nombre} />
+            <img
+              className="product-image"
+              src={images[current] || placeholderSvg}
+              alt={product.nombre}
+              onError={(e) => {
+                const el = e.currentTarget as HTMLImageElement;
+                el.onerror = null;
+                el.src = placeholderSvg;
+              }}
+            />
             {hasMultiple && (
               <>
                 <button className="cat__nav cat__nav--prev" type="button" onClick={goPrev} aria-label="Imagen anterior">&lt;</button>
