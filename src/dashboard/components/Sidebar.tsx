@@ -72,7 +72,7 @@ export default function Sidebar({ role, onLogout }: Props) {
             key={m.key}
             className={`fxdash__item ${key === m.key ? 'fxdash__item--active' : ''}`}
             onClick={() => {
-              try { localStorage.setItem('fixsy_dash_key', m.key as any); } catch {}
+              try { localStorage.setItem('fixsy_dash_key', m.key as any); } catch { }
               setKey(m.key);
             }}
           >

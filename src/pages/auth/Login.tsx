@@ -31,10 +31,10 @@ export default function Login() {
     try {
       const raw = sessionStorage.getItem('fixsy_login_failed_attempts');
       if (raw) setFailedAttempts(parseInt(raw, 10) || 0);
-    } catch {}
+    } catch { }
   }, []);
   React.useEffect(() => {
-    try { sessionStorage.setItem('fixsy_login_failed_attempts', String(failedAttempts)); } catch {}
+    try { sessionStorage.setItem('fixsy_login_failed_attempts', String(failedAttempts)); } catch { }
   }, [failedAttempts]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ export default function Login() {
       setError(res.error || 'Credenciales invalidas');
       setFailedAttempts(prev => prev + 1);
       if (shouldShowCaptcha && siteKey) {
-        try { recaptchaRef.current?.reset(); } catch {}
+        try { recaptchaRef.current?.reset(); } catch { }
         setRecaptchaToken(null);
       }
       setLoading(false);
@@ -88,18 +88,31 @@ export default function Login() {
           }
         }
       }
-    } catch {}
+    } catch { }
 
     setFailedAttempts(0);
     try {
+      // Leer el usuario recién guardado en localStorage por setSessionUser (AuthContext)
+      // Ojo: setSessionUser es asíncrono en React state, pero síncrono en localStorage si lo llamamos antes?
+      // Mejor confiamos en el resultado de mapApiUser localmente si queremos inmediatez,
+      // pero aquí ya llamamos a login(). AuthContext actualiza localStorage.
+
+      // Pequeño delay para asegurar que el contexto actualizó (aunque el await login debería bastar si persiste sincrónicamente)
       const raw = localStorage.getItem(STORAGE_KEYS.currentUser);
       const s = raw ? JSON.parse(raw) : null;
       const role = s?.role;
-      if (role === 'Admin') { navigate('/dashboard/admin'); setLoading(false); return; }
-      if (role === 'Soporte') { navigate('/dashboard/support'); setLoading(false); return; }
-    } catch {}
+
+      if (role === 'Admin') {
+        navigate('/dashboard/admin');
+      } else if (role === 'Soporte') {
+        navigate('/dashboard/support');
+      } else {
+        navigate('/');
+      }
+    } catch {
+      navigate('/');
+    }
     setLoading(false);
-    navigate('/');
   };
 
   return (

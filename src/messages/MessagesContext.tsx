@@ -15,6 +15,7 @@ export type AppMessage = {
   important: boolean;
   archived: boolean;
   deleted: boolean;
+  replied?: boolean;
   timestamp: string; // ISO
 };
 
@@ -24,12 +25,12 @@ function loadAll(): AppMessage[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) as AppMessage[] : []; } catch { return []; }
 }
 function saveAll(list: AppMessage[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch { }
 }
 
 type Ctx = {
   messages: AppMessage[];
-  send: (m: Omit<AppMessage, 'id' | 'read' | 'archived' | 'deleted' | 'important' | 'timestamp'> & Partial<Pick<AppMessage,'attachments'|'cc'|'bcc'>>) => AppMessage;
+  send: (m: Omit<AppMessage, 'id' | 'read' | 'archived' | 'deleted' | 'important' | 'timestamp'> & Partial<Pick<AppMessage, 'attachments' | 'cc' | 'bcc'>>) => AppMessage;
   update: (id: string, patch: Partial<AppMessage>) => void;
   remove: (id: string) => void; // move to trash
   archive: (id: string, v?: boolean) => void;
@@ -57,7 +58,7 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   const send: Ctx['send'] = React.useCallback((m) => {
     const sender = m.sender || user?.email || 'usuario@fixsy.local';
     const draft: AppMessage = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       sender,
       receiver: m.receiver,
       cc: (m.cc || []).filter(Boolean),

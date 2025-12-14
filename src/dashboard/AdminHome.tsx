@@ -77,7 +77,7 @@ export default function AdminHome() {
 
 
 
-      {/* Bandeja deshabilitada en Admin: solo Inicio */}
+{/* Bandeja deshabilitada en Admin: solo Inicio */ }
 
 
 

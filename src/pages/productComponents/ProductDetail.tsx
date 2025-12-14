@@ -34,8 +34,10 @@ function ProductDetail(): React.ReactElement {
     const load = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const data = await apiFetch<Product>(`${PRODUCTS_API_BASE}/api/products/${id}`);
+        // ... (rest of normalization logic)
         const basePrice = Number((data as any).precioNormal ?? (data as any).precio ?? 0) || 0;
         const imageUrl = (data as any).imageUrl || (data as any).imagen || '';
         const tags = Array.isArray((data as any).tags)
@@ -43,6 +45,9 @@ function ProductDetail(): React.ReactElement {
           : typeof (data as any).tags === 'string'
             ? (data as any).tags.split(',').map((t: string) => t.trim()).filter(Boolean)
             : [];
+
+        const validImages = Array.isArray(data.images) ? data.images.filter(Boolean) : [];
+        const finalImages = validImages.length > 0 ? validImages : (imageUrl ? [imageUrl] : []);
 
         const normalized: Product = {
           ...data,
@@ -54,7 +59,7 @@ function ProductDetail(): React.ReactElement {
           precioOferta: (data as any).precioOferta ?? (data as any).offerPrice,
           imageUrl,
           imagen: imageUrl,
-          images: Array.isArray(data.images) ? data.images.filter(Boolean) : (imageUrl ? [imageUrl] : []),
+          images: finalImages,
           descripcion: data.descripcion ?? data.descripcionCorta,
           descripcionCorta: data.descripcionCorta ?? data.descripcion,
           descripcionLarga: data.descripcionLarga ?? data.descripcion,

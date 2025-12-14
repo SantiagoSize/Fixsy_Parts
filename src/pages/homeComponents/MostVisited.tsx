@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
+import { buildProductImageUrl } from '../../utils/api';
 
 type InvItem = {
   id: string;
@@ -20,41 +21,39 @@ type OfferItem = InvItem & {
   finalPrice: number;
 };
 
-function readInventory(): InvItem[] {
-  try {
-    const raw = localStorage.getItem('fixsy_inventory');
-    const list = raw ? JSON.parse(raw) as InvItem[] : [];
-    if (!Array.isArray(list)) return [];
-    return list
-      .filter(it => it && typeof it.id !== 'undefined')
-      .map(it => {
-        const imgs = Array.isArray(it.images) ? it.images.filter(Boolean) : (it.imagen ? [it.imagen] : []);
-        const basePrice = Number((it as any).precio ?? 0) || 0;
-        const offerPrice = Number((it as any).precioOferta ?? (it as any).offerPrice ?? NaN);
-        return {
-          ...it,
-          precio: basePrice,
-          precioOferta: Number.isFinite(offerPrice) ? offerPrice : undefined,
-          images: imgs,
-          imagen: imgs[0] || it.imagen,
-        };
-      });
-  } catch { return []; }
-}
 
 export default function MostVisited(): React.ReactElement {
   const navigate = useNavigate();
-  const [items, setItems] = React.useState<InvItem[]>(readInventory());
+  const [items, setItems] = React.useState<InvItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const onStorage = (e: StorageEvent) => { if (e.key === 'fixsy_inventory') setItems(readInventory()); };
-    const onFocus = () => setItems(readInventory());
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('focus', onFocus);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('focus', onFocus);
+    // Fetch real products from Backend to find Offers
+    const fetchOffers = async () => {
+      try {
+        const { PRODUCTS_API_BASE, apiFetch } = await import('../../utils/api');
+        const data = await apiFetch<any[]>(PRODUCTS_API_BASE, '/api/products');
+        if (Array.isArray(data)) {
+          // Map backend product to InvItem format
+          const mapped = data.map(p => ({
+            id: p.id,
+            nombre: p.nombre,
+            descripcion: p.descripcion || p.descripcionCorta || '',
+            precio: p.precioNormal || p.precio || 0,
+            precioOferta: p.precioOferta || p.offerPrice || null,
+            stock: p.stock || 0,
+            imagen: p.imageUrl || p.imagen,
+            images: p.images || []
+          }));
+          setItems(mapped);
+        }
+      } catch (e) {
+        console.error("Error fetching offers:", e);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchOffers();
   }, []);
 
   const offers = React.useMemo<OfferItem[]>(() => {
@@ -74,11 +73,11 @@ export default function MostVisited(): React.ReactElement {
       })
       .filter((item): item is OfferItem => Boolean(item && item.discount > 0))
       .sort((a, b) => {
-        if (b.discount !== a.discount) return b.discount - a.discount;
-        if (b.savings !== a.savings) return b.savings - a.savings;
-        return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+        // Prioritize manually flagged offers or just high discounts
+        // We can add logic to pin specific items if needed
+        return b.discount - a.discount;
       })
-      .slice(0, 6);
+      .slice(0, 4);
   }, [items]);
 
   if (!offers.length) {
@@ -102,7 +101,7 @@ export default function MostVisited(): React.ReactElement {
         <div>
           <p className="section-kicker">Top rebajas</p>
           <h2 className="mv__title">Ofertas destacadas</h2>
-          <p className="mv__subtitle">Los 6 productos con mayor descuento en todo el catálogo.</p>
+          <p className="mv__subtitle">Los 4 productos con mayor descuento en todo el catálogo.</p>
         </div>
         <button
           type="button"
@@ -132,7 +131,7 @@ export default function MostVisited(): React.ReactElement {
             <div className="offer-card__imageWrap">
               <img
                 className="offer-card__image"
-                src={(Array.isArray(p.images) && p.images[0]) ? p.images[0] : (p.imagen || placeholderSrc)}
+                src={buildProductImageUrl((Array.isArray(p.images) && p.images[0]) ? p.images[0] : (p.imagen || '')) || placeholderSrc}
                 alt={p.nombre}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholderSrc; }}
               />

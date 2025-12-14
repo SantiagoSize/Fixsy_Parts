@@ -16,7 +16,7 @@ import PurchaseHistory from '../pages/account/PurchaseHistory';
 import Catalogo from '../pages/user/Catalogo';
 import DashboardLayout from '../dashboard/DashboardLayout';
 import AdminHome from '../dashboard/AdminHome';
-import SupportHome from '../dashboard/SupportHome';
+import SupportDashboard from '../dashboard/SupportDashboard';
 import AdminProductDashboard from '../pages/admin/AdminProductDashboard';
 import { PrivateRoute, PublicOnlyRoute, RoleRoute } from './guards';
 
@@ -40,7 +40,7 @@ function AppRoutes(): React.ReactElement {
         element={<RoleRoute allowed={['Admin', 'Soporte']} element={<DashboardLayout />} />}
       >
         <Route path="admin" element={<AdminHome />} />
-        <Route path="support" element={<SupportHome />} />
+        <Route path="support" element={<SupportDashboard />} />
       </Route>
       <Route path="/login" element={<PublicOnlyRoute element={<Login />} />} />
       <Route path="/register" element={<PublicOnlyRoute element={<Register />} />} />

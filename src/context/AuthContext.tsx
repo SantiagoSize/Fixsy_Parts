@@ -14,9 +14,10 @@ type AuthContextValue = {
   logout: () => void;
   refreshUser: () => Promise<SessionUser | null>;
   setSessionUser: (user: SessionUser) => void;
+  authenticatedFetch: <T>(path: string, options?: RequestInit & { json?: unknown }) => Promise<ApiResult<T>>;
 };
 
-const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
 
 const SESSION_KEYS = [STORAGE_KEYS.currentUser, 'fixsy_auth_user'] as const;
 
@@ -25,7 +26,7 @@ function readSession(): SessionUser | null {
     try {
       const raw = localStorage.getItem(key);
       if (raw) return JSON.parse(raw) as SessionUser;
-    } catch {}
+    } catch { }
   }
   return null;
 }
@@ -35,7 +36,7 @@ function persistSession(value: SessionUser | null) {
     try {
       if (value) localStorage.setItem(key, JSON.stringify(value));
       else localStorage.removeItem(key);
-    } catch {}
+    } catch { }
   });
 }
 
@@ -53,21 +54,20 @@ function mapApiUser(raw: any): SessionUser {
   const source = raw?.user ?? raw;
   const idValue = source?.id ?? source?.userId ?? source?.uid;
   const token = source?.token ?? raw?.token ?? raw?.accessToken;
-  const email = source?.email ?? '';
+  const email = (source?.email ?? '').trim().toLowerCase();
+
   const rawRole = source?.role ?? source?.rol ?? source?.authority ?? source?.roleName ?? source?.role?.name;
   const rawRoleId = source?.roleId ?? source?.role_id ?? source?.role?.id;
-  const forcedRole = (() => {
-    const lower = String(email).toLowerCase();
-    if (lower === 'admin@admin.fixsy.com') return 'Admin';
-    if (lower === 'soporte@soporte.fixsy.com') return 'Soporte';
-    return null;
-  })();
+
+  // REGLA DE NEGOCIO: Eliminada para confiar en el backend
+  const finalRole = mapRole(rawRole, rawRoleId);
+
   return {
     id: idValue ? String(idValue) : '',
     nombre: source?.nombre ?? source?.firstName ?? '',
     apellido: source?.apellido ?? source?.lastName ?? '',
-    email,
-    role: forcedRole ? (forcedRole as Role) : mapRole(rawRole, rawRoleId),
+    email: source?.email ?? '', // Mantener casing original para display si se desea, o usar lowercase
+    role: finalRole,
     profilePic: source?.profilePic || source?.avatarUrl || source?.avatar || undefined,
     token,
   };
@@ -87,9 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const safeApiCall = React.useCallback(
-    <T,>(path: string, options?: RequestInit & { json?: unknown }) =>
-      apiFetch<T>(USERS_API_BASE, path, { ...(options || {}), asResult: true }) as Promise<ApiResult<T>>,
-    []
+    <T,>(path: string, options?: RequestInit & { json?: unknown }) => {
+      const headers = new Headers(options?.headers || {});
+      const token = user?.token;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      return apiFetch<T>(USERS_API_BASE, path, { ...(options || {}), headers, asResult: true }) as Promise<ApiResult<T>>;
+    },
+    [user]
   );
 
   const login = React.useCallback(async (email: string, password: string) => {
@@ -143,7 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     refreshUser,
     setSessionUser,
-  }), [user, login, register, logout, refreshUser, setSessionUser]);
+    authenticatedFetch: safeApiCall,
+  }), [user, login, register, logout, refreshUser, setSessionUser, safeApiCall]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

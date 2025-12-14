@@ -24,7 +24,7 @@ export default function Register() {
   const [loading, setLoading] = React.useState(false);
   const recaptchaRef = React.useRef<ReCAPTCHA | null>(null);
   const siteKey = getRecaptchaKey();
-  const shouldUseCaptcha = isAuthRoute(location.pathname);
+  const shouldUseCaptcha = false; // isAuthRoute(location.pathname); -- Disabled for debugging
 
   React.useEffect(() => {
     if (isAuthenticated) navigate('/');
@@ -52,7 +52,7 @@ export default function Register() {
     const res = await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password, telefono: cleanPhone, phone: cleanPhone });
     if (!res.ok) {
       setError(res.error || 'Ocurrio un error');
-      if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch {} setRecaptchaToken(null); }
+      if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch { } setRecaptchaToken(null); }
       setLoading(false);
       return;
     }
@@ -68,31 +68,31 @@ export default function Register() {
         <form className="auth-form" onSubmit={onSubmit}>
           <div className="auth-field">
             <label htmlFor="firstName">Nombres</label>
-            <input id="firstName" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input id="firstName" name="firstName" autoComplete="given-name" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="lastName">Apellidos</label>
-            <input id="lastName" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} />
+            <input id="lastName" name="lastName" autoComplete="family-name" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="email">Email</label>
-            <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input id="email" name="email" autoComplete="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="confirmEmail">Confirmar email</label>
-            <input id="confirmEmail" className="form-input" type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} />
+            <input id="confirmEmail" name="confirmEmail" autoComplete="email" className="form-input" type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="phone">Telefono</label>
-            <input id="phone" className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 912345678" />
+            <input id="phone" name="phone" autoComplete="tel" className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 912345678" />
           </div>
           <div className="auth-field">
             <label htmlFor="password">Contrasena</label>
-            <input id="password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input id="password" name="password" autoComplete="new-password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           <div className="auth-field">
             <label htmlFor="confirm">Confirmar contrasena</label>
-            <input id="confirm" className="form-input" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+            <input id="confirm" name="confirmPassword" autoComplete="new-password" className="form-input" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
           </div>
           {shouldUseCaptcha && (
             <div className="captcha-container">

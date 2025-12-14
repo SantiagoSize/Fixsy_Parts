@@ -28,7 +28,7 @@ export default function DashboardLayout() {
     } catch { return 'home'; }
   });
   React.useEffect(() => {
-    try { localStorage.setItem('fixsy_dash_key', key as string); } catch {}
+    try { localStorage.setItem('fixsy_dash_key', key as string); } catch { }
   }, [key]);
   const topbarStyle: React.CSSProperties = {
     background: isAdmin ? '#6B4DFF' : '#FF6D00',

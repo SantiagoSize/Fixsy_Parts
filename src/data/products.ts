@@ -72,6 +72,19 @@ export const PRODUCTS: Product[] = [
     tags: ['lubricantes', 'motor'],
     imageUrl: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=640',
   },
+  {
+    id: 9999,
+    nombre: 'Kit de Afinamiento Completo',
+    slug: 'kit-afinamiento-completo',
+    descripcionCorta: 'Kit incluye bujías, filtros y aceite.',
+    descripcionLarga: 'Todo lo necesario para el mantenimiento de 10.000km de tu vehículo.',
+    categoria: 'Kits',
+    precioNormal: 45990,
+    precioOferta: 35990,
+    stock: 50,
+    tags: ['mantenimiento', 'kit', 'oferta'],
+    imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=640&auto=format&fit=crop&q=60',
+  }
 ];
 
 export function getProductById(id: number): Product | undefined {

@@ -3,10 +3,13 @@ const DEFAULT_PRODUCTS_API = 'http://localhost:8083';
 const DEFAULT_ORDERS_API = 'http://localhost:8084';
 const DEFAULT_MESSAGES_API = 'http://localhost:8085';
 
-export const USERS_API_BASE = import.meta.env.VITE_USERS_API || DEFAULT_USERS_API;
-export const PRODUCTS_API_BASE = import.meta.env.VITE_PRODUCTS_API || DEFAULT_PRODUCTS_API;
-export const ORDERS_API_BASE = import.meta.env.VITE_ORDERS_API || DEFAULT_ORDERS_API;
-export const MESSAGES_API_BASE = import.meta.env.VITE_MESSAGES_API || DEFAULT_MESSAGES_API;
+// Helper seguro para entorno de pruebas
+const env = (import.meta && import.meta.env) ? import.meta.env : ({} as any);
+
+export const USERS_API_BASE = env.VITE_USERS_API || DEFAULT_USERS_API;
+export const PRODUCTS_API_BASE = env.VITE_PRODUCTS_API || DEFAULT_PRODUCTS_API;
+export const ORDERS_API_BASE = env.VITE_ORDERS_API || DEFAULT_ORDERS_API;
+export const MESSAGES_API_BASE = env.VITE_MESSAGES_API || DEFAULT_MESSAGES_API;
 
 export type ApiErrorResponse = { message?: string; error?: string; errors?: string[]; details?: string };
 
@@ -38,12 +41,12 @@ export function buildUserAvatarUrl(userId: string, cacheBust?: number | string) 
  */
 export function buildProductImageUrl(imagePath: string | null | undefined): string {
   if (!imagePath) return '';
-  
+
   // Si ya es una URL completa, devolverla tal cual
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  
+
   // Extraer el nombre del archivo si viene con /images/
   let fileName = imagePath;
   if (imagePath.startsWith('/images/')) {
@@ -51,7 +54,7 @@ export function buildProductImageUrl(imagePath: string | null | undefined): stri
   } else if (imagePath.startsWith('images/')) {
     fileName = imagePath.replace('images/', '');
   }
-  
+
   // Construir la URL completa usando el endpoint /images/{fileName}
   return `${PRODUCTS_API_BASE}/images/${fileName}`;
 }

@@ -96,7 +96,10 @@ function normalizeProduct(p: Product, order: number): NormalizedProduct {
   const isOffer = Boolean((p as any).isOffer ?? (Number(precioOferta ?? NaN) > 0 && Number(precioOferta) < basePrice));
   const stock = Number(p.stock ?? 0);
   const mainImage = (p as any).imageUrl || p.imagen || '';
-  const productImages = Array.isArray(p.images) ? p.images.filter(Boolean) : (mainImage ? [mainImage] : []);
+  let productImages = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+  if (productImages.length === 0 && mainImage) {
+    productImages = [mainImage];
+  }
   const imageUrl = productImages[0] || mainImage || '';
   const tags = normalizeTags((p as any).tags || (p as any).etiquetas || p.tags);
   const descripcion = (p.descripcionCorta || p.descripcion || '').trim();
@@ -328,7 +331,7 @@ export default function Catalogo(): React.ReactElement {
         {isMobile && (
           <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-filter-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
             </svg>
             Filtros
           </button>

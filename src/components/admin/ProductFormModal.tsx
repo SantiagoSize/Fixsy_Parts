@@ -30,6 +30,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialPro
     imageUrl: initialProduct?.imageUrl,
     sku: initialProduct?.sku || '',
   }));
+  const [validated, setValidated] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
@@ -45,6 +46,7 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialPro
         imageUrl: initialProduct?.imageUrl,
         sku: initialProduct?.sku || '',
       });
+      setValidated(false);
       if (fileRef.current) fileRef.current.value = '';
     }
   }, [isOpen, initialProduct]);
@@ -61,8 +63,16 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialPro
     handleChange('tags', selected);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formEl = e.currentTarget;
+    if (formEl.checkValidity() === false) {
+      e.stopPropagation();
+      setValidated(true);
+      return;
+    }
+
+    // Logic extraction
     const normalizedName = form.nombre.trim();
     const makeSlug = (value: string) =>
       value
@@ -99,127 +109,145 @@ export default function ProductFormModal({ isOpen, onClose, onSubmit, initialPro
     }
     fd.append('product', JSON.stringify(payload));
     onSubmit(fd, payload);
+    setValidated(true); // Optional visual confirmation
   };
 
+  // Bootstrap Modal Simulation with dark overlay
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-card">
-        <header className="modal-header">
-          <div>
-            <p className="admin-kicker">Producto</p>
-            <h2 className="modal-title">{initialProduct ? 'Editar producto' : 'Crear producto'}</h2>
+    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="modal-dialog modal-lg modal-dialog-scrollable">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">{initialProduct ? 'Editar Producto' : 'Nuevo Producto'}</h5>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close"></button>
           </div>
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cerrar</button>
-        </header>
+          <div className="modal-body">
+            <form id="productForm" className={`row g-3 needs-validation ${validated ? 'was-validated' : ''}`} noValidate onSubmit={handleSubmit}>
 
-        <form className="modal-form" onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <label className="form-field">
-              <span>Nombre</span>
-              <input
-                type="text"
-                value={form.nombre}
-                onChange={e => handleChange('nombre', e.target.value)}
-                required
-              />
-            </label>
+              <div className="col-md-12">
+                <label className="form-label">Nombre del Producto</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={form.nombre}
+                  onChange={e => handleChange('nombre', e.target.value)}
+                  required
+                />
+                <div className="invalid-feedback">El nombre es obligatorio.</div>
+              </div>
 
-            <label className="form-field">
-              <span>Categoría</span>
-              <select
-                value={form.categoria}
-                onChange={e => handleChange('categoria', e.target.value)}
-              >
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </label>
+              <div className="col-md-6">
+                <label className="form-label">Categoría</label>
+                <select
+                  className="form-select"
+                  value={form.categoria}
+                  onChange={e => handleChange('categoria', e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Selecciona...</option>
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <div className="invalid-feedback">Selecciona una categoría.</div>
+              </div>
 
-          <label className="form-field">
-            <span>Precio</span>
-            <input
-              type="number"
-              min={0}
-              step={1}
-              value={form.precio}
-              onChange={e => handleChange('precio', Number(e.target.value))}
-              required
-            />
-          </label>
+              <div className="col-md-6">
+                <label className="form-label">SKU</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={form.sku || ''}
+                  onChange={e => handleChange('sku', e.target.value)}
+                  placeholder="Dejar vacío para auto-generar"
+                />
+              </div>
 
-            <label className="form-field">
-              <span>Stock</span>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                value={form.stock}
-                onChange={e => handleChange('stock', Number(e.target.value))}
-                required
-              />
-            </label>
+              <div className="col-md-4">
+                <label className="form-label">Precio ($)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min="0"
+                  value={form.precio}
+                  onChange={e => handleChange('precio', Number(e.target.value))}
+                  required
+                />
+                <div className="invalid-feedback">El precio no puede ser negativo.</div>
+              </div>
 
-            <label className="form-field">
-              <span>SKU</span>
-              <input
-                type="text"
-                value={form.sku || ''}
-                onChange={e => handleChange('sku', e.target.value)}
-                placeholder="SKU único (auto-generado si lo dejas vacío)"
-              />
-            </label>
+              <div className="col-md-4">
+                <label className="form-label">Stock</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min="0"
+                  value={form.stock}
+                  onChange={e => handleChange('stock', Number(e.target.value))}
+                  required
+                />
+                <div className="invalid-feedback">El stock es obligatorio.</div>
+              </div>
 
-            <label className="form-field">
-              <span>Descuento (%)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={form.descuento}
-                onChange={e => handleChange('descuento', clampDiscount(Number(e.target.value)))}
-              />
-            </label>
+              <div className="col-md-4">
+                <label className="form-label">Descuento (%)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min="0"
+                  max="100"
+                  value={form.descuento}
+                  onChange={e => handleChange('descuento', clampDiscount(Number(e.target.value)))}
+                />
+              </div>
 
-            <label className="form-field">
-              <span>Imagen PNG</span>
-              <input
-                type="file"
-                accept="image/png"
-                ref={fileRef}
-              />
-            </label>
+              <div className="col-12">
+                <label className="form-label">Imagen (PNG/JPG)</label>
+                {/* Si ya hay imagen URL, podrías mostrarla aquí, pero por simplicidad solo input file */}
+                <input
+                  type="file"
+                  className="form-control"
+                  accept="image/*"
+                  ref={fileRef}
+                />
+                <div className="form-text">Si no subes una imagen, se mantendrá la actual (si existe).</div>
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Descripción</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={form.descripcion}
+                  onChange={e => handleChange('descripcion', e.target.value)}
+                  required
+                ></textarea>
+                <div className="invalid-feedback">La descripción es obligatoria.</div>
+              </div>
+
+              <div className="col-12">
+                <label className="form-label">Tags</label>
+                <select
+                  className="form-select"
+                  multiple
+                  size={3}
+                  value={form.tags}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                    handleTagsChange(options);
+                  }}
+                >
+                  {tagOptions.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
+                <div className="form-text">Mantén presionado Ctrl (o Cmd) para seleccionar múltiples.</div>
+              </div>
+            </form>
           </div>
-
-          <label className="form-field">
-            <span>Descripción</span>
-            <textarea
-              rows={3}
-              value={form.descripcion}
-              onChange={e => handleChange('descripcion', e.target.value)}
-              placeholder="Detalle técnico o notas de compatibilidad"
-            />
-          </label>
-
-          <label className="form-field">
-            <span>Tags (multi-select)</span>
-            <select
-              multiple
-              value={form.tags}
-              onChange={e => {
-                const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                handleTagsChange(options);
-              }}
-            >
-              {tagOptions.map(tag => <option key={tag} value={tag}>{tag}</option>)}
-            </select>
-            <small className="form-hint">Selecciona uno o más tags para mejorar la búsqueda.</small>
-          </label>
-
-          <div className="modal-actions">
-            <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn--primary">{initialProduct ? 'Guardar cambios' : 'Crear producto'}</button>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+            <button type="submit" form="productForm" className="btn btn-primary">
+              {initialProduct ? 'Guardar Cambios' : 'Crear Producto'}
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

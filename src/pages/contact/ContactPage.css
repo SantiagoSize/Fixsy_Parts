@@ -1,53 +1,130 @@
-.fade-in { animation: fadeIn .3s ease-out; }
-@keyframes fadeIn { from { opacity: .0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
+.cp {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  font-family: var(--font-primary, sans-serif);
+}
 
-.cp { padding: 1rem 1rem 2rem 1rem; max-width: 900px; margin: 0 auto; }
-.cp { background: transparent; }
-.cp__title { font-weight: 700; font-family: 'Montserrat', sans-serif; margin: 0 0 .25rem 0; text-align: center; }
-.cp__subtitle { color: #4b4b4b; margin: 0 0 1rem 0; text-align: center; }
-.cp__phone { color: #2C2A2B; margin: 0 0 1rem 0; text-align: center; font-weight: 600; }
+.cp__title {
+  font-size: 2rem;
+  color: var(--color-primary, #333);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
 
-/* Contenedor/formulario azul corporativo */
+.cp__subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.cp__phone {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--color-accent, #007bff);
+  margin-bottom: 2rem;
+}
+
 .cp__form {
-  background: #0064CD;
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-  color: #fff;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.cp__row { display: grid; gap: .35rem; margin-bottom: .75rem; }
-.cp__row label { font-weight: 600; }
-.cp__row input, .cp__row textarea {
-  border: 0;
-  border-radius: 10px;
-  padding: .6rem .75rem;
-  font-family: 'Montserrat', sans-serif;
-  background: #ffffff;          /* Fondo blanco para contraste sobre azul */
-  color: #2C2A2B;               /* Texto gris oscuro corporativo */
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.08) inset;
+.cp__row {
+  margin-bottom: 1.5rem;
 }
-.cp__row input::placeholder, .cp__row textarea::placeholder { color: #6b7280; }
-.cp__row input:focus, .cp__row textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,0.5); }
 
-.cp__actions { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; }
-.cp__spacer { flex: 1; }
+.cp__row label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
 
-.cp__attach { background: #fff; color: #0064CD; border: 0; border-radius: 10px; padding: .55rem .9rem; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
-.cp__attach:hover { filter: brightness(.98); }
-.cp__attach:active { transform: translateY(1px); }
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
 
-.cp__clear { background: #FF0000; color: #fff; border: 0; border-radius: 10px; padding: .6rem .9rem; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
-.cp__clear:hover { filter: brightness(.98); }
-.cp__clear:active { transform: translateY(1px); }
+.form-input:focus {
+  border-color: var(--color-primary, #007bff);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
-.cp__send { background: #26AB4E; color: #fff; border: 0; border-radius: 10px; padding: .6rem 1rem; cursor: pointer; transition: transform .06s ease, filter .2s ease; }
-.cp__send:hover { filter: brightness(.98); }
-.cp__send:active { transform: translateY(1px); }
+.cp__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
 
-.cp__sent { margin-top: .75rem; background: rgba(38,171,78,0.25); color: #fff; border-radius: 10px; padding: .6rem .9rem; box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset; text-align: center; }
+.cp__attach {
+  background: none;
+  border: 1px dashed #999;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #666;
+}
 
-@media (max-width: 640px) {
-  .cp__actions { flex-wrap: wrap; }
-  .cp__spacer { display: none; }
+.cp__spacer {
+  flex: 1;
+}
+
+.cp__clear {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+}
+
+.cp__send {
+  background: var(--color-primary, #007bff);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cp__send:hover {
+  background: var(--color-primary-dark, #0056b3);
+}
+
+.cp__send:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cp__sent {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

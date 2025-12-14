@@ -20,7 +20,7 @@ type CartContextValue = {
   restockProduct: (productId: string | number, amount: number) => void;
 };
 
-const CartContext = React.createContext<CartContextValue | undefined>(undefined);
+export const CartContext = React.createContext<CartContextValue | undefined>(undefined);
 
 function getUnitPrice(product: CartProduct) {
   const offer = Number(product.precioOferta ?? NaN);
@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch {}
+    } catch { }
   }, [items]);
 
   const addToCart = React.useCallback((product: CartProduct, quantity = 1) => {
@@ -84,10 +84,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toast('No hay stock disponible para este producto');
       return;
     }
-    
+
     // Usar ref para rastrear si se agregó exitosamente
     const addedRef = { value: false };
-    
+
     setItems(prev => {
       const idx = prev.findIndex(ci => String(ci.productId) === String(product.id));
       if (idx >= 0) {
@@ -109,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addedRef.value = true;
       return [...prev, { productId: product.id, product, quantity, unitPrice }];
     });
-    
+
     // Mostrar notificación visual del carrito con un pequeño delay
     // para asegurar que el estado se actualizó
     setTimeout(() => {

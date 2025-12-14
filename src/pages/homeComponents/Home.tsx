@@ -53,6 +53,23 @@ function Home() {
           </div>
         </div>
 
+        <section className="home-section home-video my-5">
+          <div className="container-fluid px-0">
+            <div className="row justify-content-center">
+              <div className="col-12 col-lg-10 col-xl-8">
+                <div className="ratio ratio-16x9 shadow rounded overflow-hidden">
+                  <iframe
+                    src="https://www.youtube.com/embed/EDSTDHU6oFI?rel=0"
+                    title="Mecánica Automotriz en Acción"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  ></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="home-section home-categories">
           <div className="section-header categories-header">
             <div>
@@ -62,7 +79,7 @@ function Home() {
               type="button"
               className="home-hero__button home-categories__cta"
               onClick={() => navigate('/catalogo')}
-          >
+            >
               Ver todas las categorias
             </button>
           </div>

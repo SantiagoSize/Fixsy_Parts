@@ -155,86 +155,108 @@ export default function AdminProductDashboard(): React.ReactElement {
     );
   }, [products, query]);
 
-  const rows = filtered.map(product => {
-    const finalPrice = Math.max(0, Math.round(product.precio * (1 - product.descuento / 100)));
-    return (
-      <tr key={product.id}>
-        <td>
-          <div className="admin-product__row">
-            <div className="admin-product__name">{product.nombre}</div>
-            <div className="admin-pill admin-pill--ghost">ID: {product.id}</div>
-          </div>
-          <div className="admin-product__meta">
-            <span className="admin-pill">{product.categoria}</span>
-            {product.tags.slice(0, 3).map(tag => (
-              <span key={tag} className="admin-pill admin-pill--ghost">#{tag}</span>
-            ))}
-          </div>
-        </td>
-        <td>{formatCurrency(product.precio)}</td>
-        <td>{product.descuento}%</td>
-        <td>{formatCurrency(finalPrice)}</td>
-        <td>{product.stock}</td>
-        <td>
-          <div className="admin-actions">
-            <button className="btn btn--ghost" type="button" onClick={() => openEdit(product)}>Editar</button>
-            <button className="btn btn--danger" type="button" onClick={() => handleDelete(product.id)}>Eliminar</button>
-          </div>
-        </td>
-      </tr>
-    );
-  });
-
   return (
-    <section className="admin-shell">
-      <header className="admin-header">
+    <section className="container-fluid py-4">
+      <header className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <p className="admin-kicker">Dashboard · Productos</p>
-          <h1 className="admin-title">Gestión de productos</h1>
-          <p className="admin-subtitle">Administra catálogo, precios, stock y etiquetas desde un solo lugar.</p>
+          <h1 className="h3 mb-0">Gestión de productos</h1>
+          <p className="text-muted small">Administra catálogo, precios, stock y etiquetas.</p>
         </div>
-        <div className="admin-header__actions">
+        <div className="d-flex gap-2">
           <input
             type="text"
-            className="search-bar"
+            className="form-control"
             placeholder="Buscar por nombre o ID..."
             value={query}
             onChange={e => setQuery(e.target.value)}
-            style={{ minWidth: 220 }}
+            style={{ maxWidth: 250 }}
           />
-          <button className="btn btn--primary" type="button" onClick={openCreate}>Crear Producto</button>
+          <button className="btn btn-primary" type="button" onClick={openCreate}>
+            <i className="bi bi-plus-lg me-1"></i>+ Nuevo
+          </button>
         </div>
       </header>
 
-      {error && <div className="user-toast" role="alert" style={{ position: 'static' }}>{error}</div>}
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
-      <div className="admin-card">
-        <div className="admin-card__body">
-          {loading ? (
-            <div className="admin-table__empty">Cargando productos...</div>
-          ) : (
-            <div className="admin-table__wrap">
-              <table className="admin-table" role="grid">
-                <thead>
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover table-striped align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th scope="col" style={{ width: '40%' }}>Producto</th>
+                  <th scope="col">Precio Base</th>
+                  <th scope="col">Descuento</th>
+                  <th scope="col">Precio Final</th>
+                  <th scope="col">Stock</th>
+                  <th scope="col" className="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length > 0 ? (
+                  filtered.map(product => {
+                    const finalPrice = Math.max(0, Math.round(product.precio * (1 - product.descuento / 100)));
+                    return (
+                      <tr key={product.id}>
+                        <td>
+                          <div className="d-flex flex-column">
+                            <span className="fw-bold text-dark">{product.nombre}</span>
+                            <div className="d-flex gap-2 mt-1 align-items-center">
+                              <span className="badge bg-light text-secondary border">ID: {product.id}</span>
+                              <span className="badge bg-info bg-opacity-10 text-info">{product.categoria}</span>
+                              {product.tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="badge bg-secondary bg-opacity-10 text-secondary border">#{tag}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                        <td>{formatCurrency(product.precio)}</td>
+                        <td>
+                          {product.descuento > 0 ? <span className="text-success fw-bold">-{product.descuento}%</span> : <span className="text-muted">-</span>}
+                        </td>
+                        <td className="fw-semibold">{formatCurrency(finalPrice)}</td>
+                        <td>
+                          <span className={`badge ${product.stock > 10 ? 'bg-success' : product.stock > 0 ? 'bg-warning' : 'bg-danger'}`}>
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          <button
+                            className="btn btn-sm btn-outline-primary me-2"
+                            type="button"
+                            onClick={() => openEdit(product)}
+                            title="Editar"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                              <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            type="button"
+                            onClick={() => handleDelete(product.id)}
+                            title="Eliminar"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                              <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
                   <tr>
-                    <th>Nombre</th>
-                    <th>Precio Original</th>
-                    <th>Descuento (%)</th>
-                    <th>Precio Final</th>
-                    <th>Stock</th>
-                    <th>Acciones</th>
+                    <td colSpan={6} className="text-center py-5 text-muted">
+                      {loading ? 'Cargando productos...' : 'No se encontraron productos.'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {rows.length > 0 ? rows : (
-                    <tr>
-                      <td colSpan={6} className="admin-table__empty">Sin productos cargados.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
