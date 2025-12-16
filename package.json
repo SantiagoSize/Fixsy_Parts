@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@types/react-google-recaptcha": "^2.1.9",
+    "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

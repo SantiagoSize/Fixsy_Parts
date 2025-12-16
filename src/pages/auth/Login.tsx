@@ -1,164 +1,118 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import ReCAPTCHA from 'react-google-recaptcha';
-import { isAuthRoute } from '../../utils/isAuthRoute';
-import getRecaptchaKey from '../../utils/getRecaptchaKey';
-import Alert from '../../components/Alert';
-import { STORAGE_KEYS } from '../../utils/storageKeys';
-import './Auth.css';
+import { useNavigate } from 'react-router-dom';
 
-export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+const Login: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(''); // Estado para mensaje de éxito
+  const [loading, setLoading] = useState(false);
+
+  const { login, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [error, setError] = React.useState<string | null>(null);
-  const [failedAttempts, setFailedAttempts] = React.useState(0);
-  const [recaptchaToken, setRecaptchaToken] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const recaptchaRef = React.useRef<ReCAPTCHA | null>(null);
-  const siteKey = getRecaptchaKey();
-  const shouldUseCaptchaRoute = isAuthRoute(location.pathname);
-  const shouldShowCaptcha = shouldUseCaptchaRoute && failedAttempts >= 2;
 
-  React.useEffect(() => {
-    if (isAuthenticated) navigate('/');
-  }, [isAuthenticated, navigate]);
+  // Redireccionar basado en rol cuando está autenticado
+  // No confiamos en useEffect para el redirect de login para evitar condiciones de carrera
 
-  React.useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('fixsy_login_failed_attempts');
-      if (raw) setFailedAttempts(parseInt(raw, 10) || 0);
-    } catch { }
-  }, []);
-  React.useEffect(() => {
-    try { sessionStorage.setItem('fixsy_login_failed_attempts', String(failedAttempts)); } catch { }
-  }, [failedAttempts]);
-
-  const onSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError('');
+
+    // Validaciones Previas
+    if (!email.trim() || !password.trim()) {
+      setError('Por favor, completa todos los campos.');
+      return;
+    }
+
     setLoading(true);
-    if (!email || !password) {
-      setError('Por favor completa todos los campos');
-      setLoading(false);
-      return;
-    }
-    const emailOk = /.+@.+\..+/.test(email);
-    if (!emailOk) { setError('Ingresa un email valido'); setLoading(false); return; }
-    if (shouldShowCaptcha) {
-      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
-      if (!recaptchaToken) { setError('Por seguridad debes verificar que no eres un robot.'); setLoading(false); return; }
-    }
-    const res = await login(email, password);
-    if (!res.ok) {
-      setError(res.error || 'Credenciales invalidas');
-      setFailedAttempts(prev => prev + 1);
-      if (shouldShowCaptcha && siteKey) {
-        try { recaptchaRef.current?.reset(); } catch { }
-        setRecaptchaToken(null);
-      }
-      setLoading(false);
-      return;
-    }
+
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.mgmtUsers);
-      const list = raw ? JSON.parse(raw) : [];
-      const found = Array.isArray(list) ? list.find((u: any) => (u?.email || '').toLowerCase() === email.toLowerCase()) : null;
-      if (found) {
-        const status = String(found.status || 'Activo');
-        if (status === 'Bloqueado') {
-          setError('Tu cuenta esta bloqueada. Contacta con soporte.');
-          setLoading(false);
-          return;
+      // 1. Esperar login y obtener usuario
+      const loggedUser = await login(email, password);
+
+      setSuccess('Inicio de sesión correcto.');
+
+      // Breve retraso para que el usuario lea el mensaje
+      setTimeout(() => {
+        // 2. Navegar inmediatamente segun rol
+        const role = String(loggedUser.role).toLowerCase();
+
+        if (role === "admin") {
+          navigate('/dashboard/admin', { replace: true });
+        } else if (role === "soporte") {
+          navigate('/dashboard/support', { replace: true });
+        } else {
+          navigate('/', { replace: true });
         }
-        if (status === 'Suspendido') {
-          const until = found.suspensionHasta ? new Date(found.suspensionHasta) : null;
-          if (until && new Date() < until) {
-            setError(`Tu cuenta esta suspendida hasta ${until.toLocaleDateString()}`);
-            setLoading(false);
-            return;
-          } else {
-            found.status = 'Activo';
-            found.suspensionHasta = '';
-            const next = list.map((u: any) => u.email === found.email ? found : u);
-            localStorage.setItem(STORAGE_KEYS.mgmtUsers, JSON.stringify(next));
-          }
-        }
+      }, 1000);
+
+    } catch (err: any) {
+      console.error("Error Login:", err);
+
+      // Traducción de Errores (401, 403, 500)
+      let msg = 'Ocurrió un error al conectar con el servidor.'; // Default requested by user
+
+      // Si el error viene de Axios
+      if (err.response) {
+        if (err.response.status === 401) msg = 'Correo o contraseña incorrectos.';
+        else if (err.response.status === 403) msg = 'Cuenta bloqueada o inactiva.';
+        // else keep default
+      } else if (err.message) {
+        // Fallback si AuthContext lanza Error con mensaje
+        if (err.message.includes('401')) msg = 'Correo o contraseña incorrectos.';
+        else if (err.message.includes('403')) msg = 'Cuenta bloqueada o inactiva.';
+        else msg = err.message;
       }
-    } catch { }
 
-    setFailedAttempts(0);
-    try {
-      // Leer el usuario recién guardado en localStorage por setSessionUser (AuthContext)
-      // Ojo: setSessionUser es asíncrono en React state, pero síncrono en localStorage si lo llamamos antes?
-      // Mejor confiamos en el resultado de mapApiUser localmente si queremos inmediatez,
-      // pero aquí ya llamamos a login(). AuthContext actualiza localStorage.
-
-      // Pequeño delay para asegurar que el contexto actualizó (aunque el await login debería bastar si persiste sincrónicamente)
-      const raw = localStorage.getItem(STORAGE_KEYS.currentUser);
-      const s = raw ? JSON.parse(raw) : null;
-      const role = s?.role;
-
-      if (role === 'Admin') {
-        navigate('/dashboard/admin');
-      } else if (role === 'Soporte') {
-        navigate('/dashboard/support');
-      } else {
-        navigate('/');
-      }
-    } catch {
-      navigate('/');
+      setError(msg);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
         <h1 className="auth-title">Iniciar sesion</h1>
-        <form className="auth-form" onSubmit={onSubmit}>
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-field">
             <label htmlFor="email">Email</label>
-            <input id="email" className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input
+              type="email"
+              className="form-input"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading}
+            />
           </div>
           <div className="auth-field">
             <label htmlFor="password">Contrasena</label>
-            <input id="password" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <input
+              type="password"
+              className="form-input"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+            />
           </div>
-          {shouldShowCaptcha && (
-            <div className="captcha-container">
-              {siteKey ? (
-                <div style={{ display: 'grid', gap: 6 }}>
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={siteKey}
-                    onChange={(token) => setRecaptchaToken(token)}
-                    onExpired={() => setRecaptchaToken(null)}
-                  />
-                  {!recaptchaToken && (
-                    <Alert type="error" message="Por seguridad debes verificar que no eres un robot." />
-                  )}
-                </div>
-              ) : (
-                <Alert type="error" message="Clave reCAPTCHA faltante, contacte al administrador." />
-              )}
-            </div>
-          )}
-          {error && <div className="form-error" role="alert">{error}</div>}
+          {error && <div className="form-error">{error}</div>}
+          {success && <div className="form-success" style={{ color: 'green', marginBottom: '1rem', textAlign: 'center' }}>{success}</div>}
           <div className="auth-actions">
-            <button type="submit" className="btn-primary form-button" disabled={loading || (shouldShowCaptcha && !recaptchaToken)}>
-              {loading ? 'Ingresando...' : 'Iniciar sesion'}
+            <button type="submit" className="btn-primary form-button" disabled={loading}>
+              {loading ? 'Cargando...' : 'Entrar'}
             </button>
             <div className="auth-links">
-              <Link className="auth-link" to="/forgot-password">?Olvidaste tu contrasena?</Link>
-              <Link className="auth-link" to="/register">Crear cuenta</Link>
+              <a className="auth-link" href="/register">Crear cuenta</a>
             </div>
           </div>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default Login;

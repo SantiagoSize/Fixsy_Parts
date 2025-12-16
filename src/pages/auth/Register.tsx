@@ -24,41 +24,69 @@ export default function Register() {
   const [loading, setLoading] = React.useState(false);
   const recaptchaRef = React.useRef<ReCAPTCHA | null>(null);
   const siteKey = getRecaptchaKey();
-  const shouldUseCaptcha = false; // isAuthRoute(location.pathname); -- Disabled for debugging
+  const shouldUseCaptcha = false;
 
   React.useEffect(() => {
     if (isAuthenticated) navigate('/');
   }, [isAuthenticated, navigate]);
 
+  const isSubmittingRef = React.useRef(false);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // BLOQUEO ESTRICTO: Chequeo síncrono para prevenir doble envío
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    setLoading(true);
     setError(null);
     setSuccess(null);
-    setLoading(true);
+
+    // Validaciones
     if (!firstName || !lastName || !email || !confirmEmail || !password || !confirm) {
       setError('Completa todos los campos');
+      isSubmittingRef.current = false;
       setLoading(false);
       return;
     }
-    if (!/.+@.+\..+/.test(email)) { setError('Ingresa un email valido'); setLoading(false); return; }
-    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) { setError('Los correos no coinciden'); setLoading(false); return; }
-    if (password.length < 8) { setError('La contrasena debe tener al menos 8 caracteres'); setLoading(false); return; }
-    if (password !== confirm) { setError('Las contrasenas no coinciden'); setLoading(false); return; }
+    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) { setError('Los correos no coinciden'); isSubmittingRef.current = false; setLoading(false); return; }
+    if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres'); isSubmittingRef.current = false; setLoading(false); return; }
+    if (password !== confirm) { setError('Las contraseñas no coinciden'); isSubmittingRef.current = false; setLoading(false); return; }
     if (shouldUseCaptcha) {
-      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); setLoading(false); return; }
-      if (!recaptchaToken) { setError('Debes verificar que no eres un robot.'); setLoading(false); return; }
+      if (!siteKey) { setError('Clave reCAPTCHA faltante, contacte al administrador.'); isSubmittingRef.current = false; setLoading(false); return; }
+      if (!recaptchaToken) { setError('Debes verificar que no eres un robot.'); isSubmittingRef.current = false; setLoading(false); return; }
     }
     const cleanPhone = phone ? phone.trim() : '';
-    const res = await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password, telefono: cleanPhone, phone: cleanPhone });
-    if (!res.ok) {
-      setError(res.error || 'Ocurrio un error');
+
+    try {
+      await register({ nombre: firstName.trim(), apellido: lastName.trim(), email, password, telefono: cleanPhone, phone: cleanPhone });
+
+      // Lógica de Éxito
+      window.alert('¡Registro exitoso! Redirigiendo al inicio de sesión...');
+      navigate('/login');
+
+    } catch (err: any) {
+      // Manejo de Errores
+      console.error("Error en registro:", err);
+      let msg = "Error al registrar. Intenta nuevamente.";
+
+      if (err.response?.data) {
+        // Mensaje del backend si está disponible
+        const data = err.response.data;
+        msg = typeof data === 'string' ? data : (data.message || msg);
+      } else if (err.message) {
+        msg = err.message;
+      }
+
+      setError(msg);
       if (shouldUseCaptcha && siteKey) { try { recaptchaRef.current?.reset(); } catch { } setRecaptchaToken(null); }
+
+      // Solo desbloquear si falló.
+      // Si tuvo éxito, estamos redirigiendo, así que mantener el bloqueo previene clics posteriores.
+      isSubmittingRef.current = false;
       setLoading(false);
-      return;
     }
-    setSuccess('Cuenta creada correctamente. Te redirigimos al login...');
-    setLoading(false);
-    setTimeout(() => navigate('/login'), 800);
   };
 
   return (

@@ -11,15 +11,27 @@ import { formatPrice, getDisplayPrice } from "../../utils/price";
 const COMPRAS_KEY = STORAGE_KEYS.mgmtPurchases;
 const inboxKeyFor = (email: string) => `${STORAGE_KEYS.inboxPrefix}${(email || '').toLowerCase()}`;
 
-const mapRoleSafe = (value: any, roleId?: any): Role => {
-  const id = Number(roleId);
-  if (id === 2) return 'Admin';
-  if (id === 3) return 'Soporte';
+const mapRoleSafe = (value: any, roleId?: any, email?: string): Role => {
+  // 1. REGLA SUPREMA DE DOMINIO (Visual Override)
+  // Esto corrige visualmente usuarios antiguos o errores de BD
+  const emailLower = (email || '').toLowerCase().trim();
+  if (emailLower.endsWith('@adminfixsy.cl')) return 'Admin';
+  if (emailLower.endsWith('@fixsy.cl') || emailLower.endsWith('@fixsy.com')) return 'Soporte';
+
+  // 2. Si no es un dominio reservado, miramos el nombre del rol
+  // Ignoramos IDs harcodeados (2, 3) porque pueden variar entre BDs local/prod.
+  // Nos fiamos estrictamente del NOMBRE del rol.
   const v = String(value || '').toLowerCase();
-  if (v.includes('admin')) return 'Admin';
-  if (v.includes('soporte') || v.includes('support')) return 'Soporte';
+
+  if (v.includes('admin') || v.includes('administrador')) return 'Admin';
+  if (v === 'soporte' || v === 'support' || v.includes('soport')) return 'Soporte';
+
+  // 3. Default absoluto
+  // Default absoluto para todo lo demas (incluyendo "Usuario" o nulos)
   return 'Usuario';
 };
+
+export type RoleOption = { id: number; nombre: string; descripcion?: string };
 
 function loadCompras(): UserPurchase[] {
   try { const raw = localStorage.getItem(COMPRAS_KEY); const list = raw ? JSON.parse(raw) : []; return Array.isArray(list) ? list : []; } catch { return []; }
@@ -29,7 +41,7 @@ function loadInbox(email: string): InboxMessage[] {
   try { const raw = localStorage.getItem(inboxKeyFor(email)); return raw ? JSON.parse(raw) as InboxMessage[] : []; } catch { return []; }
 }
 
-// --- Sub-components for overlays (Inline for simplicity, can be moved if needed) ---
+// ... Overlays kept as is or imported ... 
 function PurchaseDetailOverlay({ userId, idCompra, onClose }: { userId: string; idCompra: string; onClose: () => void }) {
   const compra = React.useMemo(() => loadCompras().find((c: any) => String((c as any).idUsuario) === String(userId) && (c as any).idCompra === idCompra), [userId, idCompra]);
   const items = React.useMemo(() => (compra as any)?.items || [], [compra]);
@@ -147,6 +159,7 @@ export default function UserManagement() {
   const { user, authenticatedFetch } = useAuth();
   const isSupport = user?.role === 'Soporte';
   const [users, setUsers] = useState<MgmtUser[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<MgmtUser | null>(null);
   const [toast, setToast] = useState<{ msg: string, type: string } | null>(null);
@@ -161,29 +174,70 @@ export default function UserManagement() {
     return "Activo";
   };
 
+  const loadRoles = React.useCallback(async () => {
+    try {
+      const response = await authenticatedFetch('http://localhost:8080/api/roles');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setRoles(data);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading roles", e);
+    }
+  }, [authenticatedFetch]);
+
   const loadUsers = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authenticatedFetch<any[]>('/api/users');
-      if (!res.ok) throw new Error(res.error || `Error ${res.status}`);
-      const list = res.data;
-      const mapped: MgmtUser[] = (Array.isArray(list) ? list : []).map((u: any) => ({
-        id: String(u.id ?? u.userId ?? u.uid ?? u.email ?? `u_${Math.random().toString(36).slice(2, 8)}`),
-        nombre: u.nombre ?? u.firstName ?? '',
-        apellido: u.apellido ?? u.lastName ?? '',
-        email: u.email ?? '',
-        role: mapRoleSafe(
-          u.role ?? u.rol ?? u.authority ?? u.roleName ?? (u.role?.name ?? 'Usuario'),
-          u.roleId ?? u.role_id ?? u.role?.id
-        ),
-        status: normalizeStatus(String(u.status ?? 'Activo')),
-        foto: u.profilePic || u.avatarUrl || u.avatar,
-        suspensionHasta: u.suspensionHasta || '',
-      }));
+      const response = await authenticatedFetch('http://localhost:8080/api/users');
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${text}`);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("No es un JSON valido:", text);
+        throw new Error("El servidor devolvió una respuesta inválida (posiblemente HTML). Verifica el puerto y la URL.");
+      }
+
+      // Lógica robusta: Array directo vs Pageable (Spring Boot)
+      const list = Array.isArray(data) ? data : (data.content || []);
+
+      const mapped: MgmtUser[] = list.map((u: any) => {
+        const roleObj = (typeof u.role === 'object' && u.role) ? u.role : {};
+        const roleNameCandidates = [
+          roleObj.nombre,
+          roleObj.name,
+          u.roleName,
+          typeof u.role === 'string' ? u.role : ''
+        ];
+        const roleNameFound = roleNameCandidates.find(r => r && typeof r === 'string') || '';
+
+        const roleId = u.roleId ?? u.role_id ?? roleObj.id;
+
+        return {
+          id: String(u.id ?? u.userId ?? u.uid ?? u.email ?? `u_${Math.random().toString(36).slice(2, 8)}`),
+          nombre: u.nombre ?? u.firstName ?? '',
+          apellido: u.apellido ?? u.lastName ?? '',
+          email: u.email ?? '',
+          role: mapRoleSafe(roleNameFound, roleId, u.email),
+          roleId: roleId ? Number(roleId) : undefined,
+          status: normalizeStatus(String(u.status ?? 'Activo')),
+          foto: u.profilePic || u.avatarUrl || u.avatar,
+          suspensionHasta: u.suspensionHasta || '',
+        };
+      });
       setUsers(mapped);
     } catch (err: any) {
-      console.error("Error fetching users:", err);
+      console.error("Error obteniendo usuarios:", err);
       const msg = err?.message || 'No se pudo cargar la lista de usuarios.';
       if (msg.includes("403")) {
         setError("Acceso denegado. No tienes permisos para ver esta lista.");
@@ -197,7 +251,8 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+    if (!isSupport) loadRoles();
+  }, [loadUsers, loadRoles, isSupport]);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -216,20 +271,63 @@ export default function UserManagement() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const updateUser = (id: string, changes: Partial<MgmtUser>, toastMsg?: string) => {
-    setUsers(prev => {
-      const next = prev.map(u => u.id === id ? { ...u, ...changes } : u);
-      const sel = next.find(u => u.id === id) || null;
-      if (selected && selected.id === id) setSelected(sel);
-      return next;
-    });
-    if (toastMsg) showToast(toastMsg);
+  const handleUpdateStatus = async (id: string, changes: Partial<MgmtUser>, toastMsg?: string) => {
+    // Extract status and suspension from changes or fallback
+    const status = changes.status as UserStatus;
+    const suspensionHasta = changes.suspensionHasta;
+
+    if (!status) return;
+
+    // Optimistic update
+    const previousUsers = [...users];
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...changes } : u));
+    if (selected?.id === id) setSelected(prev => prev ? { ...prev, ...changes } : null);
+
+    try {
+      // Backend espera query params para status
+      const url = `http://localhost:8080/api/users/${id}/status?status=${status}${suspensionHasta ? `&suspensionHasta=${suspensionHasta}` : ''}`;
+      const res = await authenticatedFetch(url, { method: 'PUT' });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(errText || 'Error al actualizar estado');
+      }
+      showToast(toastMsg || `Usuario ${status === 'Activo' ? 'reactivado' : status.toLowerCase()}`, 'success');
+    } catch (e: any) {
+      console.error(e);
+      showToast(e.message, 'danger');
+      // Revert optimistic
+      setUsers(previousUsers);
+      if (selected?.id === id) setSelected(previousUsers.find(u => u.id === id) || null);
+    }
   };
 
-  const suspenderUsuario = (id: string, dias: number) => {
-    const fechaFin = new Date();
-    fechaFin.setDate(fechaFin.getDate() + (isNaN(dias) ? 0 : dias));
-    updateUser(id, { status: "Suspendido" as UserStatus, suspensionHasta: fechaFin.toISOString() }, `Usuario suspendido por ${dias} días`);
+  const handleChangeRole = async (id: string, roleId: number) => {
+    const roleObj = roles.find(r => r.id === roleId);
+    if (!roleObj) return;
+    const roleName = mapRoleSafe(roleObj.nombre, roleId);
+
+    const previousUsers = [...users];
+    // Optimistic
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, role: roleName, roleId } : u));
+    if (selected?.id === id) setSelected(prev => prev ? { ...prev, role: roleName, roleId } : null);
+
+    try {
+      const res = await authenticatedFetch(`http://localhost:8080/api/users/${id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roleId })
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(errText || 'Error al cambiar rol');
+      }
+      showToast(`Rol actualizado a ${roleName}`, 'success');
+    } catch (e: any) {
+      console.error(e);
+      showToast(e.message, 'danger');
+      setUsers(previousUsers);
+      if (selected?.id === id) setSelected(previousUsers.find(u => u.id === id) || null);
+    }
   };
 
   return (
@@ -302,9 +400,15 @@ export default function UserManagement() {
       {selected && (
         <UserDetailModal
           user={selected}
+          roles={roles}
           onClose={() => setSelected(null)}
-          onUpdate={updateUser}
-          onSuspend={suspenderUsuario}
+          onUpdate={handleUpdateStatus}
+          onSuspend={(id, dias) => {
+            const fecha = new Date();
+            fecha.setDate(fecha.getDate() + dias);
+            handleUpdateStatus(id, { status: "Suspendido", suspensionHasta: fecha.toISOString() }, `Usuario suspendido por ${dias} días`);
+          }}
+          onRoleChange={handleChangeRole}
           onOpenPurchase={(id) => {
             setShowPurchDetail({ idCompra: id });
           }}

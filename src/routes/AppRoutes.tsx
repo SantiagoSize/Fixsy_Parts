@@ -18,37 +18,69 @@ import DashboardLayout from '../dashboard/DashboardLayout';
 import AdminHome from '../dashboard/AdminHome';
 import SupportDashboard from '../dashboard/SupportDashboard';
 import AdminProductDashboard from '../pages/admin/AdminProductDashboard';
-import { PrivateRoute, PublicOnlyRoute, RoleRoute } from './guards';
+import ProtectedRoute from '../components/ProtectedRoute';
+import PublicRoute from './PublicRoute';
 
 const NotFoundPlaceholder = () => <div style={{ padding: '1rem' }}>404 - No encontrado</div>;
+
+import { useAuth } from '../context/AuthContext';
+
+const RedirectIfAdmin: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { user } = useAuth();
+  if (user?.role === 'Admin') {
+    return <Navigate to="/dashboard/admin" replace />;
+  }
+  return children;
+};
 
 function AppRoutes(): React.ReactElement {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={
+        <RedirectIfAdmin>
+          <Home />
+        </RedirectIfAdmin>
+      } />
       <Route path="/catalogo" element={<Catalogo />} />
       <Route path="/catalog" element={<Navigate to="/catalogo" replace />} />
       <Route path="/cart" element={<CartView />} />
       <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/checkout" element={<PrivateRoute element={<Checkout />} />} />
+      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
+
       {/* Dashboard (Admin/Soporte) */}
-      <Route
-        path="/dashboard"
-        element={<RoleRoute allowed={['Admin', 'Soporte']} element={<DashboardLayout />} />}
-      >
-        <Route path="admin" element={<AdminHome />} />
-        <Route path="support" element={<SupportDashboard />} />
+      <Route path="/dashboard/admin" element={
+        <ProtectedRoute allowedRoles={['Admin']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<AdminHome />} />
       </Route>
-      <Route path="/login" element={<PublicOnlyRoute element={<Login />} />} />
-      <Route path="/register" element={<PublicOnlyRoute element={<Register />} />} />
-      <Route path="/forgot-password" element={<PublicOnlyRoute element={<ForgotPassword />} />} />
-      <Route path="/compose" element={<RoleRoute allowed={['Soporte']} element={<ComposeMessage />} />} />
-      <Route path="/history" element={<PrivateRoute element={<PurchaseHistory />} />} />
-      <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
-      <Route path="/admin/products" element={<RoleRoute allowed={['Admin']} element={<AdminProductDashboard />} />} />
+
+      <Route path="/dashboard/support" element={
+        <ProtectedRoute allowedRoles={['Soporte']}>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<SupportDashboard />} />
+      </Route>
+
+      {/* Legacy/Other Dashboard Paths if needed */}
+      <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
+
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+
+      <Route path="/compose" element={<ProtectedRoute allowedRoles={['Soporte']}><ComposeMessage /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><PurchaseHistory /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+      <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['Admin']}><AdminProductDashboard /></ProtectedRoute>} />
+
       <Route path="*" element={<NotFoundPlaceholder />} />
     </Routes>
   );

@@ -11,6 +11,7 @@ export type MgmtUser = {
   apellido: string;
   email: string;
   role: Role;
+  roleId?: number; // ID del rol para actualizaciones
   status: Status;
   foto?: string;
   suspensionHasta?: string;

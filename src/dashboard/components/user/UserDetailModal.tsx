@@ -3,10 +3,14 @@ import { MgmtUser, UserStatus } from "../../../types/user";
 import { UserPurchasesBox } from "./UserPurchasesBox";
 import { UserMessagesBox } from "./UserMessagesBox";
 
+import { RoleOption } from "../UserManagement";
+
 type Props = {
   user: MgmtUser;
+  roles: RoleOption[];
   onClose: () => void;
   onUpdate: (id: string, changes: Partial<MgmtUser>, toastMsg?: string) => void;
+  onRoleChange: (id: string, roleId: number) => void;
   onSuspend: (id: string, dias: number) => void;
   onOpenPurchase: (idCompra: string) => void;
   onOpenConversation: (id: string) => void;
@@ -14,8 +18,10 @@ type Props = {
 
 export function UserDetailModal({
   user,
+  roles,
   onClose,
   onUpdate,
+  onRoleChange,
   onSuspend,
   onOpenPurchase,
   onOpenConversation,

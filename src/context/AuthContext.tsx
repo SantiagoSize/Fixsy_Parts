@@ -1,162 +1,132 @@
-import React from 'react';
-import { AuthSessionResponse, LoginPayload, RegisterPayload, Role, SessionUser, UserProfileResponse } from '../types/auth';
-import { STORAGE_KEYS } from '../utils/storageKeys';
-import { ApiResult, USERS_API_BASE, apiFetch } from '../utils/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 
-type LoginResult = { ok: boolean; status?: number; error?: string };
-type RegisterResult = { ok: boolean; status?: number; error?: string };
+interface User {
+  id: number;
+  email: string;
+  nombres: string;
+  apellidos: string;
+  telefono?: string;
+  role: string; // "Admin" | "Soporte" | "Usuario"
+}
 
-type AuthContextValue = {
-  user: SessionUser | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<LoginResult>;
-  register: (user: RegisterPayload) => Promise<RegisterResult>;
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<User>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
-  refreshUser: () => Promise<SessionUser | null>;
-  setSessionUser: (user: SessionUser) => void;
-  authenticatedFetch: <T>(path: string, options?: RequestInit & { json?: unknown }) => Promise<ApiResult<T>>;
-};
-
-export const AuthContext = React.createContext<AuthContextValue | undefined>(undefined);
-
-const SESSION_KEYS = [STORAGE_KEYS.currentUser, 'fixsy_auth_user'] as const;
-
-function readSession(): SessionUser | null {
-  for (const key of SESSION_KEYS) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) return JSON.parse(raw) as SessionUser;
-    } catch { }
-  }
-  return null;
+  isAuthenticated: boolean;
+  isLoading?: boolean;
+  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
-function persistSession(value: SessionUser | null) {
-  SESSION_KEYS.forEach(key => {
-    try {
-      if (value) localStorage.setItem(key, JSON.stringify(value));
-      else localStorage.removeItem(key);
-    } catch { }
-  });
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function mapRole(value: any, roleId?: any): Role {
-  const id = Number(roleId);
-  if (id === 2) return 'Admin';
-  if (id === 3) return 'Soporte';
-  const v = String(value || '').toLowerCase();
-  if (v.includes('admin')) return 'Admin';
-  if (v.includes('soporte') || v.includes('support')) return 'Soporte';
-  return 'Usuario';
-}
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-function mapApiUser(raw: any): SessionUser {
-  const source = raw?.user ?? raw;
-  const idValue = source?.id ?? source?.userId ?? source?.uid;
-  const token = source?.token ?? raw?.token ?? raw?.accessToken;
-  const email = (source?.email ?? '').trim().toLowerCase();
-
-  const rawRole = source?.role ?? source?.rol ?? source?.authority ?? source?.roleName ?? source?.role?.name;
-  const rawRoleId = source?.roleId ?? source?.role_id ?? source?.role?.id;
-
-  // REGLA DE NEGOCIO: Eliminada para confiar en el backend
-  const finalRole = mapRole(rawRole, rawRoleId);
-
-  return {
-    id: idValue ? String(idValue) : '',
-    nombre: source?.nombre ?? source?.firstName ?? '',
-    apellido: source?.apellido ?? source?.lastName ?? '',
-    email: source?.email ?? '', // Mantener casing original para display si se desea, o usar lowercase
-    role: finalRole,
-    profilePic: source?.profilePic || source?.avatarUrl || source?.avatar || undefined,
-    token,
-  };
-}
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<SessionUser | null>(readSession());
-
-  const setSessionUser = React.useCallback((next: SessionUser) => {
-    persistSession(next);
-    setUser(next);
-  }, []);
-
-  const logout = React.useCallback(() => {
-    persistSession(null);
-    setUser(null);
-  }, []);
-
-  const safeApiCall = React.useCallback(
-    <T,>(path: string, options?: RequestInit & { json?: unknown }) => {
-      const headers = new Headers(options?.headers || {});
-      const token = user?.token;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+  useEffect(() => {
+    const savedUser = localStorage.getItem('fixsy_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        localStorage.removeItem('fixsy_user');
       }
-      return apiFetch<T>(USERS_API_BASE, path, { ...(options || {}), headers, asResult: true }) as Promise<ApiResult<T>>;
-    },
-    [user]
-  );
+    }
+    setIsLoading(false);
+  }, []);
 
-  const login = React.useCallback(async (email: string, password: string) => {
-    const payload: LoginPayload = { email: email.trim(), password };
-    const result = await safeApiCall<AuthSessionResponse | UserProfileResponse>('/api/users/login', {
-      method: 'POST',
-      json: payload,
+  const login = async (email: string, password: string): Promise<User> => {
+    const response = await axios.post('http://localhost:8080/api/auth/login', {
+      email: email.toLowerCase().trim(),
+      password
     });
 
-    if (!result.ok) {
-      const unauthorized = result.status === 401 || result.status === 403;
-      const message = result.error || (unauthorized ? 'Credenciales invalidas' : 'No se pudo iniciar sesion');
-      return { ok: false, status: result.status, error: message };
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Error al iniciar sesion');
     }
 
-    const sessionUser = mapApiUser(result.data);
-    setSessionUser(sessionUser);
-    return { ok: true, status: result.status };
-  }, [safeApiCall, setSessionUser]);
+    const userData: User = {
+      id: response.data.id,
+      email: response.data.email,
+      nombres: response.data.nombres,
+      apellidos: response.data.apellidos,
+      telefono: response.data.telefono,
+      role: response.data.role
+    };
 
-  const register = React.useCallback(async (newUser: RegisterPayload) => {
-    const phoneValue = newUser.phone ?? newUser.telefono ?? '';
-    const payload = { ...newUser, email: newUser.email.trim(), phone: phoneValue, telefono: phoneValue };
-    const result = await safeApiCall('/api/users/register', { method: 'POST', json: payload });
+    setUser(userData);
+    localStorage.setItem('fixsy_user', JSON.stringify(userData));
+    return userData;
+  };
 
-    if (!result.ok) {
-      const generic = result.status === 400 ? 'Datos invalidos' : 'No se pudo completar el registro';
-      return { ok: false, status: result.status, error: result.error || generic };
+  const register = async (data: any) => {
+    // Map fields to Backend DTO
+    const payload = {
+      email: data.email.toLowerCase().trim(),
+      nombres: data.nombre || data.nombres,
+      apellidos: data.apellido || data.apellidos,
+      contrasena: data.password || data.contrasena,
+      telefono: data.telefono || data.phone
+    };
+
+    const response = await axios.post('http://localhost:8080/api/auth/register', payload);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Error al registrar');
     }
 
-    return { ok: true, status: result.status };
-  }, [safeApiCall]);
+    const userData: User = {
+      id: response.data.id,
+      email: response.data.email,
+      nombres: response.data.nombres,
+      apellidos: response.data.apellidos,
+      role: response.data.role
+    };
+  };
 
-  const refreshUser = React.useCallback(async () => {
-    if (!user?.id) return null;
-    const result = await safeApiCall<UserProfileResponse>(`/api/users/${user.id}`, { method: 'GET' });
-    if (!result.ok) {
-      if (result.status === 401 || result.status === 403) logout();
-      return null;
-    }
-    const mapped = mapApiUser({ ...result.data, email: (result.data as any)?.email ?? user.email });
-    setSessionUser(mapped);
-    return mapped;
-  }, [user?.id, user?.email, logout, setSessionUser, safeApiCall]);
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('fixsy_user');
+  };
 
-  const value = React.useMemo<AuthContextValue>(() => ({
-    user,
-    isAuthenticated: !!user,
-    login,
-    register,
-    logout,
-    refreshUser,
-    setSessionUser,
-    authenticatedFetch: safeApiCall,
-  }), [user, login, register, logout, refreshUser, setSessionUser, safeApiCall]);
+  // Implementacion simple de authenticatedFetch sin tokens
+  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+    const finalOptions = {
+      ...options,
+      credentials: 'include' as RequestCredentials // Para enviar cookies si el backend las usa
+      // No agregamos Authorization header porque no usamos JWT
+    };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+    return fetch(url, finalOptions);
+  };
 
-export function useAuth() {
-  const ctx = React.useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');
-  return ctx;
-}
+  if (isLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Cargando...</div>;
+  }
+
+  return (
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      isAuthenticated: !!user,
+      isLoading,
+      authenticatedFetch
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe usarse dentro de AuthProvider');
+  }
+  return context;
+};
