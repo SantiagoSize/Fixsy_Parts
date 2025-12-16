@@ -2,464 +2,463 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import Alert from '../../components/Alert';
-import { formatPrice, getDisplayPrice } from '../../utils/price';
+import { formatPrice } from '../../utils/price';
 import './Checkout.css';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch, ORDERS_API_BASE, USERS_API_BASE } from '../../utils/api';
-import { OrderRequestDTO, OrderResponseDTO } from '../../types/order';
+import { OrderItemRequestDTO, OrderRequestDTO, OrderResponseDTO } from '../../types/order';
 import { useAddresses } from '../../hooks/useAddresses';
 import { estimateShipping, ShippingAddress } from '../../utils/shipping';
 import { useOrders } from '../../context/OrdersContext';
-import { STORAGE_KEYS } from '../../utils/storageKeys';
+import { CHILE_REGIONES } from '../../data/chileDpa';
 
-type FormState = {
+export type FormState = {
   name: string;
   email: string;
   phone: string;
   address: string;
   region: string;
+  province: string;
   comuna: string;
-  payment: string;
   notes: string;
+  payment: string;
 };
 
-function Checkout(): React.ReactElement {
+type OrderErrorPayload = {
+  order: OrderResponseDTO;
+  message: string;
+};
+
+const provincesForRegion = (regionName: string) => {
+  const region = CHILE_REGIONES.find((item) => item.nombre === regionName);
+  return region?.provincias ?? [];
+};
+
+const communesForProvince = (regionName: string, provinceName: string) => {
+  const region = CHILE_REGIONES.find((item) => item.nombre === regionName);
+  const province = region?.provincias.find((item) => item.nombre === provinceName);
+  return province?.comunas ?? [];
+};
+
+function Checkout(): React.ReactElement | null {
   const navigate = useNavigate();
   const { items, clearCart } = useCart();
-  const { user } = useAuth();
-  const { addresses } = useAddresses(user?.id || 'guest');
+  const { user, isAuthenticated } = useAuth();
+  const userMeta = React.useMemo(
+    () => (user ? (user as Record<string, any>) : null),
+    [user],
+  );
+  const { addresses } = useAddresses(user?.id ? String(user.id) : 'guest');
   const { addOrder: addOrderToContext } = useOrders();
-  const [userProfile, setUserProfile] = React.useState<any>(null);
-  const [loadingProfile, setLoadingProfile] = React.useState(false);
   const [form, setForm] = React.useState<FormState>({
-    name: user ? `${user.nombre} ${user.apellido}`.trim() : '',
-    email: user?.email || '',
+    name: '',
+    email: '',
     phone: '',
     address: '',
     region: '',
+    province: '',
     comuna: '',
-    payment: 'tarjeta',
     notes: '',
+    payment: 'tarjeta',
   });
   const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [order, setOrder] = React.useState<OrderResponseDTO | null>(null);
 
-  // Cargar perfil del usuario para obtener teléfono
-  React.useEffect(() => {
-    if (!user?.id) return;
-    setLoadingProfile(true);
-    fetch(`${USERS_API_BASE}/api/users/${user.id}`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data) {
-          setUserProfile(data);
-          setForm(prev => ({
-            ...prev,
-            phone: data.telefono || data.phone || prev.phone,
-          }));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingProfile(false));
-  }, [user?.id]);
+  const shippingAddress: ShippingAddress | null = form.region && form.province && form.comuna
+    ? { region: form.region, provincia: form.province, comuna: form.comuna }
+    : null;
 
-  // Autocompletar con primera dirección si existe
-  React.useEffect(() => {
-    if (addresses.length > 0 && !form.address) {
-      const firstAddr = addresses[0];
-      setForm(prev => ({
-        ...prev,
-        address: `${firstAddr.address} ${firstAddr.number}`.trim(),
-        region: firstAddr.region || prev.region,
-        comuna: firstAddr.commune || prev.comuna,
-        phone: firstAddr.phone || prev.phone || userProfile?.telefono || userProfile?.phone || prev.phone,
-      }));
-    }
-  }, [addresses, userProfile]);
+  const orderItems: OrderItemRequestDTO[] = React.useMemo(
+    () => items.map((item) => ({
+      productId: item.productId,
+      productName: item.product.nombre,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+    [items],
+  );
 
-  // Autocompletar nombre y email cuando cambia el usuario
-  React.useEffect(() => {
-    if (user) {
-      setForm(prev => ({
-        ...prev,
-        name: `${user.nombre} ${user.apellido}`.trim() || prev.name,
-        email: user.email || prev.email,
-      }));
-    }
-  }, [user?.nombre, user?.apellido, user?.email]);
-
-  const cartItems = items.map((it) => ({
-    id: it.productId,
-    nombre: it.product.nombre,
-    precio: it.product.precio,
-    precioOferta: (it.product as any).precioOferta,
-    sku: it.product.sku,
-    cantidad: it.quantity,
-    unitPrice: it.unitPrice ?? getDisplayPrice({ precio: it.product.precio, precioOferta: (it.product as any).precioOferta }).final,
-  }));
-
-  const subtotal = cartItems.reduce((sum, it) => sum + it.unitPrice * it.cantidad, 0);
+  const subtotal = React.useMemo(() => orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0), [orderItems]);
+  const totalItems = orderItems.reduce((acc, item) => acc + item.quantity, 0);
   const iva = Math.round(subtotal * 0.19);
-  
-  // Calcular shipping
-  const shippingAddress: ShippingAddress | null = form.region && form.comuna ? {
-    region: form.region,
-    comuna: form.comuna,
-  } : null;
   const shippingEstimate = shippingAddress ? estimateShipping(shippingAddress, subtotal) : null;
   const shippingCost = shippingEstimate?.price ?? 0;
   const total = subtotal + iva + shippingCost;
-  const totalItems = cartItems.reduce((sum, it) => sum + it.cantidad, 0);
+
+  const provinceOptions = React.useMemo(() => provincesForRegion(form.region), [form.region]);
+  const communeOptions = React.useMemo(() => communesForProvince(form.region, form.province), [form.region, form.province]);
+
+  const isFormValid = Boolean(
+    form.name.trim() &&
+    form.email.trim() &&
+    form.phone.trim() &&
+    form.address.trim() &&
+    form.region &&
+    form.province &&
+    form.comuna,
+  );
 
   React.useEffect(() => {
     if (items.length === 0) {
-      navigate('/cart');
+      navigate('/cart', { replace: true });
     }
   }, [items.length, navigate]);
 
-  const handleChange = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+  React.useEffect(() => {
+    const derivedName = `${userMeta?.nombre ?? userMeta?.nombres ?? ''}`.trim();
+    const derivedLast = `${userMeta?.apellido ?? userMeta?.apellidos ?? ''}`.trim();
+    const fullName = [derivedName, derivedLast].filter(Boolean).join(' ').trim();
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || fullName,
+      email: prev.email || userMeta?.email || '',
+      phone: prev.phone || userMeta?.telefono || userMeta?.phone || '',
+    }));
+  }, [userMeta]);
+
+  React.useEffect(() => {
+    if (!isAuthenticated || !user?.id) return undefined;
+    let isMounted = true;
+    fetch(`${USERS_API_BASE}/api/users/${user.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data) return;
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || `${data.nombre ?? data.nombres ?? ''} ${data.apellido ?? data.apellidos ?? ''}`.trim(),
+          email: prev.email || data.email || '',
+          phone: prev.phone || data.telefono || data.phone || '',
+          address: prev.address || data.direccion || data.address || '',
+          region: prev.region || data.region || '',
+          province: prev.province || data.provincia || data.province || '',
+          comuna: prev.comuna || data.comuna || '',
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, user?.id]);
+
+  React.useEffect(() => {
+    if (form.region || addresses.length === 0) return;
+    const first = addresses[0];
+    setForm((prev) => ({
+      ...prev,
+      address: prev.address || `${first.address} ${first.number}`.trim(),
+      region: prev.region || first.region,
+      province: prev.province || first.province,
+      comuna: prev.comuna || first.commune,
+    }));
+  }, [addresses, form.region]);
+
+  const handleField = (field: keyof FormState, value: string) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'region') {
+        next.province = '';
+        next.comuna = '';
+      } else if (field === 'province') {
+        next.comuna = '';
+      }
+      return next;
+    });
     setError(null);
-    setSuccess(null);
   };
 
-  const buildOrderPayload = (): OrderRequestDTO => {
-    const userName = form.name || `${user?.nombre || ''} ${user?.apellido || ''}`.trim() || 'Invitado';
-    const userEmail = form.email || user?.email || '';
-    const itemsDto = cartItems.map(it => ({
-      productId: it.id,
-      productName: it.nombre,
-      productSku: it.sku || undefined,
-      quantity: it.cantidad,
-      unitPrice: it.unitPrice,
-    }));
-    return {
-      userId: user?.id || null,
-      userEmail,
-      userName,
-      status: 'PENDIENTE', // Estado inicial de la orden
+  const buildShippingLabel = () => {
+    const parts = [form.address, form.comuna, form.province, form.region].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const placeOrder = async () => {
+    if (!isFormValid) {
+      setError('Completa todos los datos de envío para continuar.');
+      return;
+    }
+    if (items.length === 0) {
+      navigate('/cart', { replace: true });
+      return;
+    }
+    const payload: OrderRequestDTO = {
+      userId: isAuthenticated ? String(user?.id ?? '') : null,
+      userEmail: form.email.trim(),
+      userName: form.name.trim(),
       subtotal,
       iva,
       shippingCost,
       total,
       totalItems,
-      shippingAddress: form.address,
+      shippingAddress: buildShippingLabel(),
       shippingRegion: form.region,
       shippingComuna: form.comuna,
-      contactPhone: form.phone,
+      contactPhone: form.phone.trim(),
       paymentMethod: form.payment,
-      notes: form.notes || undefined,
-      items: itemsDto,
-    };
-  };
-
-
-  // Función para crear orden local como fallback
-  const createLocalOrder = (payload: OrderRequestDTO): OrderResponseDTO => {
-    const orderId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const now = new Date().toISOString();
-    
-    const localOrder: OrderResponseDTO = {
-      id: orderId,
-      userId: payload.userId,
-      userEmail: payload.userEmail,
-      userName: payload.userName,
-      status: payload.status || 'PENDIENTE',
-      subtotal: payload.subtotal,
-      iva: payload.iva,
-      shippingCost: payload.shippingCost || 0,
-      total: payload.total || (payload.subtotal + (payload.iva || 0) + (payload.shippingCost || 0)),
-      totalItems: payload.totalItems,
-      shippingAddress: payload.shippingAddress,
-      shippingRegion: payload.shippingRegion,
-      shippingComuna: payload.shippingComuna,
-      contactPhone: payload.contactPhone,
-      paymentMethod: payload.paymentMethod,
-      paymentReference: payload.paymentReference,
-      notes: payload.notes,
-      createdAt: now,
-      items: payload.items.map((it, idx) => ({
-        id: idx + 1,
-        productId: it.productId,
-        productName: it.productName,
-        productSku: it.productSku,
-        quantity: it.quantity,
-        unitPrice: it.unitPrice,
-        subtotal: it.unitPrice * it.quantity,
-      })),
+      notes: form.notes.trim() || undefined,
+      items: orderItems,
     };
 
-    // Guardar en localStorage como fallback
-    try {
-      const key = `${STORAGE_KEYS.orders}_api`;
-      const existing = localStorage.getItem(key);
-      const orders: OrderResponseDTO[] = existing ? JSON.parse(existing) : [];
-      orders.unshift(localOrder);
-      localStorage.setItem(key, JSON.stringify(orders));
-    } catch (e) {
-      console.warn('No se pudo guardar orden en localStorage:', e);
-    }
-
-    // También agregar al contexto antiguo para compatibilidad
-    addOrderToContext({
-      userEmail: payload.userEmail,
-      items: payload.items.map(it => ({
-        productId: Number(it.productId) || 0,
-        name: it.productName,
-        quantity: it.quantity,
-        price: it.unitPrice,
-      })),
-    });
-
-    return localOrder;
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    if (!items.length) { setError('Tu carrito esta vacio.'); return; }
-    if (!form.name || !form.email || !form.address || !form.region || !form.comuna || !form.phone) {
-      setError('Completa todos los campos requeridos.');
-      return;
-    }
-    if (!/.+@.+\..+/.test(form.email)) { setError('Ingresa un email valido.'); return; }
-    // No login requerido: cualquier usuario puede completar la compra
     setLoading(true);
+    setError(null);
     try {
-      const payload = buildOrderPayload();
-      console.log('Enviando orden:', payload);
-      
-      // Intentar primero con el microservicio
-      const result = await apiFetch<OrderResponseDTO>(ORDERS_API_BASE, '/api/orders', {
+      const order = await apiFetch<OrderResponseDTO>(ORDERS_API_BASE, '/api/orders', {
         method: 'POST',
         json: payload,
-        asResult: true,
       });
-
-      let created: OrderResponseDTO;
-
-      if (!result.ok) {
-        console.warn('Microservicio no disponible, usando fallback local:', result.error);
-        
-        // Si el microservicio no está disponible, usar fallback local
-        if (result.status === undefined || result.status === 0) {
-          console.log('Creando orden local como fallback...');
-          created = createLocalOrder(payload);
-          setSuccess('Compra realizada con exito (guardada localmente). El microservicio no está disponible, pero tu orden se guardó correctamente.');
-        } else {
-          const errorMsg = result.error || `Error ${result.status || 'desconocido'}: No se pudo crear la orden.`;
-          setError(errorMsg);
-          return;
-        }
-      } else {
-        created = result.data;
-        console.log('Orden creada en microservicio:', created);
-        setSuccess('Compra realizada con exito. Tu orden ha sido registrada correctamente.');
-      }
-      
-      setOrder(created);
+      addOrderToContext({
+        userEmail: order.userEmail,
+        items: order.items.map((it) => ({
+          productId: typeof it.productId === 'string' ? Number(it.productId) : it.productId,
+          name: it.productName,
+          quantity: it.quantity,
+          price: it.unitPrice,
+        })),
+      });
       clearCart();
-    } catch (err: any) {
-      console.error('Error inesperado:', err);
-      const errorMessage = err?.message || 'No pudimos crear tu orden. Intenta nuevamente.';
-      
-      // Si es un error de red, intentar fallback local
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        console.log('Error de red detectado, usando fallback local...');
-        try {
-          const payload = buildOrderPayload();
-          const created = createLocalOrder(payload);
-          setOrder(created);
-          setSuccess('Compra realizada con exito (guardada localmente). El microservicio no está disponible, pero tu orden se guardó correctamente.');
-          clearCart();
-        } catch (fallbackErr: any) {
-          setError(`No se pudo conectar con el servidor ni guardar localmente. Verifica que el microservicio de órdenes esté corriendo en ${ORDERS_API_BASE}`);
-        }
-      } else {
-        setError(errorMessage);
-      }
+      navigate('/checkout/success', { state: order });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'No se pudo crear la orden.';
+      const fallbackOrder: OrderResponseDTO = {
+        id: `pendiente-${Date.now()}`,
+        userEmail: payload.userEmail,
+        userName: payload.userName,
+        status: 'error',
+        subtotal: payload.subtotal,
+        iva: payload.iva,
+        shippingCost: payload.shippingCost ?? 0,
+        total: payload.total ?? 0,
+        totalItems: payload.totalItems,
+        shippingAddress: payload.shippingAddress,
+        shippingRegion: payload.shippingRegion,
+        shippingComuna: payload.shippingComuna,
+        contactPhone: payload.contactPhone,
+        paymentMethod: payload.paymentMethod,
+        notes: payload.notes,
+        items: payload.items.map((item, index) => ({
+          id: `fallback-${item.productId}-${index}`,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.quantity * item.unitPrice,
+        })),
+      };
+      navigate('/checkout/error', { state: { order: fallbackOrder, message } as OrderErrorPayload });
     } finally {
       setLoading(false);
     }
   };
 
-  if (order) {
-    const orderIva = order.iva ?? Math.round(order.subtotal * 0.19);
-    const orderShipping = order.shippingCost || 0;
-    const orderTotal = order.total ?? (order.subtotal + orderIva + orderShipping);
-    const orderTotalItems = order.totalItems ?? order.items.reduce((sum, it) => sum + it.quantity, 0);
-
-    return (
-      <section className="checkout">
-        <h1>Compra confirmada</h1>
-        <div className="checkout-receipt">
-          <div className="checkout-receipt__header">
-            <h2>Recibo de Compra</h2>
-            <div className="checkout-receipt__order-number">
-              <strong>Orden #{order.id}</strong>
-            </div>
-            <p className="checkout-receipt__date">
-              {order.createdAt ? new Date(order.createdAt).toLocaleString('es-CL') : new Date().toLocaleString('es-CL')}
-            </p>
-          </div>
-
-          <div className="checkout-receipt__section">
-            <h3>Detalle de ítems</h3>
-            <div className="checkout-list">
-              {order.items.map((it) => (
-                <div key={it.id} className="checkout-item">
-                  <div className="checkout-item__info">
-                    <span className="co-name">{it.productName}</span>
-                    <span className="co-qty">Cantidad: {it.quantity}</span>
-                    <span className="co-price">Precio unitario: {formatPrice(it.unitPrice)}</span>
-                  </div>
-                  <div className="checkout-item__subtotal">
-                    <span className="co-price">{formatPrice(it.subtotal)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="checkout-receipt__section">
-            <h3>Resumen de totales</h3>
-            <div className="checkout-list">
-              <div className="checkout-item">
-                <span className="co-name">Subtotal</span>
-                <span className="co-price">{formatPrice(order.subtotal)}</span>
-              </div>
-              <div className="checkout-item">
-                <span className="co-name">IVA (19%)</span>
-                <span className="co-price">{formatPrice(orderIva)}</span>
-              </div>
-              <div className="checkout-item">
-                <span className="co-name">Costo de envío</span>
-                <span className="co-price">{orderShipping === 0 ? 'Gratis' : formatPrice(orderShipping)}</span>
-              </div>
-              <div className="checkout-item">
-                <span className="co-name">Total de ítems</span>
-                <span className="co-price">{orderTotalItems}</span>
-              </div>
-              <div className="checkout-item checkout-item--total">
-                <span className="co-name">Total final</span>
-                <span className="co-price">{formatPrice(orderTotal)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="checkout-receipt__section">
-            <h3>Información de envío</h3>
-            <p><strong>Dirección:</strong> {order.shippingAddress}</p>
-            <p><strong>Comuna:</strong> {order.shippingComuna}</p>
-            <p><strong>Región:</strong> {order.shippingRegion}</p>
-            <p><strong>Teléfono de contacto:</strong> {order.contactPhone}</p>
-          </div>
-
-          <div className="checkout-receipt__section">
-            <p><strong>Estado:</strong> {order.status}</p>
-            <p><strong>Método de pago:</strong> {order.paymentMethod}</p>
-          </div>
-        </div>
-
-        {success && <Alert type="success" message={success} />}
-        <div className="checkout-actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-          <button type="button" className="btn-primary" onClick={() => navigate('/')}>Ir a inicio</button>
-          <button type="button" className="btn-save" onClick={() => navigate('/history')}>Ver historial de ordenes</button>
-        </div>
-      </section>
-    );
+  if (!items.length) {
+    return null;
   }
 
   return (
     <section className="checkout">
-      <h1>Checkout</h1>
-      <p>Items en carrito: {totalItems}</p>
-      
+      <h1 className="checkout-title">Checkout</h1>
+      <p className="checkout-items-count">{totalItems} productos en tu pedido</p>
+
+      {error && (
+        <div style={{ marginBottom: 16 }}>
+          <Alert type="error" message={error} />
+        </div>
+      )}
+
       <div className="checkout-summary">
         <h2>Resumen del pedido</h2>
-        <div className="checkout-list">
-          {cartItems.map((it) => (
-            <div key={it.id} className="checkout-item">
-              <span className="co-name">{it.nombre}</span>
-              <span className="co-qty">x{it.cantidad}</span>
-              <span className="co-price">{formatPrice(it.unitPrice * it.cantidad)}</span>
+        <div className="checkout-table-wrapper">
+          <table className="checkout-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Unitario</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orderItems.map((item) => (
+                <tr key={`${item.productId}-${item.quantity}`}>
+                  <td className="checkout-table__name">{item.productName}</td>
+                  <td className="checkout-table__qty">{item.quantity}</td>
+                  <td className="checkout-table__price">{formatPrice(item.unitPrice)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2}>Subtotal</td>
+                <td>{formatPrice(subtotal)}</td>
+              </tr>
+              <tr>
+                <td colSpan={2}>IVA (19%)</td>
+                <td>{formatPrice(iva)}</td>
+              </tr>
+              <tr>
+                <td colSpan={2}>Costo de envío</td>
+                <td>{shippingEstimate ? (shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost)) : 'Por estimar'}</td>
+              </tr>
+              <tr className="checkout-table__total">
+                <td colSpan={2}>Total final</td>
+                <td>{formatPrice(total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="checkout-table-note" aria-live="polite">
+          {shippingEstimate ? (
+            <>
+              <strong>{shippingEstimate.label}</strong>
+              <span>{shippingEstimate.eta}</span>
+            </>
+          ) : (
+            <span>Completa región, provincia y comuna para calcular el envío estimado.</span>
+          )}
+        </div>
+        <div className="checkout-table-responsive">
+          {orderItems.map((item) => (
+            <div key={`mobile-${item.productId}-${item.quantity}`} className="checkout-item checkout-item--mobile">
+              <div>
+                <span>{item.productName}</span>
+                <span>
+                  x{item.quantity} · {formatPrice(item.unitPrice)}
+                </span>
+              </div>
             </div>
           ))}
-        </div>
-        <div className="checkout-totals">
-          <div className="checkout-item">
-            <span className="co-name">Subtotal</span>
-            <span className="co-price">{formatPrice(subtotal)}</span>
-          </div>
-          <div className="checkout-item">
-            <span className="co-name">IVA (19%)</span>
-            <span className="co-price">{formatPrice(iva)}</span>
-          </div>
-          <div className="checkout-item">
-            <span className="co-name">Costo de envío</span>
-            <span className="co-price">
-              {shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost)}
-              {shippingEstimate && shippingCost === 0 && (
-                <span style={{ display: 'block', fontSize: '0.85em', color: '#666' }}>
-                  {shippingEstimate.label}
-                </span>
-              )}
-            </span>
-          </div>
-          <div className="checkout-item checkout-item--total">
-            <span className="co-name">Total final</span>
-            <span className="co-price">{formatPrice(total)}</span>
+          <div className="checkout-item checkout-item--mobile checkout-item--mobile-total">
+            <div>
+              <span>Total</span>
+              <span>{formatPrice(total)}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <form className="checkout-form" onSubmit={onSubmit}>
+      <section className="checkout-form">
         <h2>Datos de envío</h2>
         <div className="co-field">
-          <label htmlFor="name">Nombre completo *</label>
-          <input id="name" className="form-input" value={form.name} onChange={e => handleChange('name', e.target.value)} required />
+          <label htmlFor="checkout-name">Nombre completo</label>
+          <input
+            id="checkout-name"
+            className="form-input"
+            value={form.name}
+            onChange={(e) => handleField('name', e.target.value)}
+            placeholder="Nombre y apellido"
+            type="text"
+          />
         </div>
         <div className="co-field">
-          <label htmlFor="email">Email *</label>
-          <input id="email" className="form-input" type="email" value={form.email} onChange={e => handleChange('email', e.target.value)} required />
+          <label htmlFor="checkout-email">Email</label>
+          <input
+            id="checkout-email"
+            className="form-input"
+            value={form.email}
+            onChange={(e) => handleField('email', e.target.value)}
+            placeholder="correo@dominio.com"
+            type="email"
+          />
         </div>
         <div className="co-field">
-          <label htmlFor="phone">Teléfono *</label>
-          <input id="phone" className="form-input" value={form.phone} onChange={e => handleChange('phone', e.target.value)} required />
+          <label htmlFor="checkout-phone">Teléfono</label>
+          <input
+            id="checkout-phone"
+            className="form-input"
+            value={form.phone}
+            onChange={(e) => handleField('phone', e.target.value)}
+            placeholder="+56 9 1234 5678"
+            type="tel"
+          />
         </div>
         <div className="co-field">
-          <label htmlFor="address">Dirección *</label>
-          <input id="address" className="form-input" value={form.address} onChange={e => handleChange('address', e.target.value)} required />
+          <label htmlFor="checkout-address">Dirección</label>
+          <input
+            id="checkout-address"
+            className="form-input"
+            value={form.address}
+            onChange={(e) => handleField('address', e.target.value)}
+            placeholder="Calle, número, departamento"
+            type="text"
+          />
         </div>
         <div className="co-field">
-          <label htmlFor="region">Región *</label>
-          <input id="region" className="form-input" value={form.region} onChange={e => handleChange('region', e.target.value)} required />
-        </div>
-        <div className="co-field">
-          <label htmlFor="comuna">Comuna *</label>
-          <input id="comuna" className="form-input" value={form.comuna} onChange={e => handleChange('comuna', e.target.value)} required />
-        </div>
-        <div className="co-field">
-          <label htmlFor="payment">Método de pago *</label>
-          <select id="payment" className="form-input" value={form.payment} onChange={e => handleChange('payment', e.target.value)} required>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="transferencia">Transferencia</option>
-            <option value="efectivo">Efectivo</option>
+          <label htmlFor="checkout-region">Región</label>
+          <select
+            id="checkout-region"
+            className="form-input"
+            value={form.region}
+            onChange={(e) => handleField('region', e.target.value)}
+          >
+            <option value="">Selecciona una región</option>
+            {CHILE_REGIONES.map((region) => (
+              <option key={region.nombre} value={region.nombre}>{region.nombre}</option>
+            ))}
           </select>
         </div>
         <div className="co-field">
-          <label htmlFor="notes">Notas adicionales</label>
-          <textarea id="notes" className="form-input" value={form.notes} onChange={e => handleChange('notes', e.target.value)} rows={3} />
+          <label htmlFor="checkout-province">Provincia</label>
+          <select
+            id="checkout-province"
+            className="form-input"
+            value={form.province}
+            onChange={(e) => handleField('province', e.target.value)}
+            disabled={!form.region}
+          >
+            <option value="">Selecciona una provincia</option>
+            {provinceOptions.map((province) => (
+              <option key={province.nombre} value={province.nombre}>{province.nombre}</option>
+            ))}
+          </select>
         </div>
-        {error && <Alert type="error" message={error} />}
-        {success && <Alert type="success" message={success} />}
-        <button type="submit" className="btn-primary form-button" disabled={loading || loadingProfile}>
-          {loading ? 'Procesando...' : 'Confirmar compra'}
-        </button>
-      </form>
+        <div className="co-field">
+          <label htmlFor="checkout-comuna">Comuna</label>
+          <select
+            id="checkout-comuna"
+            className="form-input"
+            value={form.comuna}
+            onChange={(e) => handleField('comuna', e.target.value)}
+            disabled={!form.province}
+          >
+            <option value="">Selecciona una comuna</option>
+            {communeOptions.map((comuna) => (
+              <option key={comuna.nombre} value={comuna.nombre}>{comuna.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <div className="co-field">
+          <label htmlFor="checkout-notes">Notas adicionales</label>
+          <textarea
+            id="checkout-notes"
+            className="form-input"
+            value={form.notes}
+            onChange={(e) => handleField('notes', e.target.value)}
+            placeholder="¿Hay algo que debamos saber sobre el envío?"
+          />
+        </div>
+        <div className="co-field">
+          <label htmlFor="checkout-payment">Método de pago</label>
+          <select
+            id="checkout-payment"
+            className="form-input"
+            value={form.payment}
+            onChange={(e) => handleField('payment', e.target.value)}
+          >
+            <option value="tarjeta">Tarjeta de crédito o débito</option>
+            <option value="transferencia">Transferencia bancaria</option>
+            <option value="efectivo">Efectivo en sucursal</option>
+          </select>
+        </div>
+        <div className="checkout-actions">
+          <button
+            type="button"
+            className="btn-action"
+            onClick={placeOrder}
+            disabled={loading || !isFormValid}
+          >
+            {loading ? 'Procesando orden...' : 'Confirmar compra'}
+          </button>
+        </div>
+      </section>
     </section>
   );
 }

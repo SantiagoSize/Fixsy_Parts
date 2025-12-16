@@ -3,6 +3,8 @@ import React from 'react';
 import Home from '../pages/homeComponents/Home';
 import ProductDetail from '../pages/productComponents/ProductDetail';
 import Checkout from '../pages/checkoutComponents/Checkout';
+import CheckoutError from '../pages/checkoutComponents/CheckoutError';
+import CheckoutSuccess from '../pages/checkoutComponents/CheckoutSuccess';
 import CartView from '../pages/cartComponents/CartView';
 import TermsPage from '../pages/legal/TermsPage';
 import PrivacyPage from '../pages/legal/PrivacyPage';
@@ -46,6 +48,8 @@ function AppRoutes(): React.ReactElement {
       <Route path="/cart" element={<CartView />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout/success" element={<CheckoutSuccess />} />
+      <Route path="/checkout/error" element={<CheckoutError />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />

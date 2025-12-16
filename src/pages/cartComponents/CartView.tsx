@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAddresses } from '../../hooks/useAddresses';
 import { estimateShipping, ShippingAddress } from '../../utils/shipping';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
+import { USERS_API_BASE } from '../../utils/api';
 import './CartView.css';
 import CartItem, { CartItemData } from './CartItem';
 import { CHILE_REGIONES } from '../../data/chileDpa';
@@ -27,7 +28,8 @@ function CartView(): React.ReactElement {
   const { items, updateQuantity, removeFromCart } = useCart();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addresses } = useAddresses(user?.id || 'guest');
+  const profileId = user?.id ? String(user.id) : 'guest';
+  const { addresses } = useAddresses(profileId);
 
   const cartProducts: CartItemData[] = items.map((it) => ({
     id: it.productId,
@@ -57,6 +59,7 @@ function CartView(): React.ReactElement {
     commune: '',
   });
   const [guestError, setGuestError] = React.useState<string | null>(null);
+  const [profileAddress, setProfileAddress] = React.useState<string>('');
 
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId);
   const mapToShippingAddress = (addr: typeof addresses[number]): ShippingAddress => ({
@@ -64,7 +67,6 @@ function CartView(): React.ReactElement {
     provincia: addr.province,
     comuna: addr.commune,
   });
-
   React.useEffect(() => {
     if (addresses.length === 0) {
       setSelectedAddressId(null);
@@ -77,6 +79,33 @@ function CartView(): React.ReactElement {
       return addresses[0].id;
     });
   }, [addresses]);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      setProfileAddress('');
+      return;
+    }
+    let isActive = true;
+    fetch(`${USERS_API_BASE}/profile/${profileId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isActive || !data) return;
+        const parts = [
+          data.direccion || data.address,
+          data.region,
+          data.provincia || data.province,
+          data.comuna,
+        ].filter(Boolean);
+        setProfileAddress(parts.join(' · '));
+      })
+      .catch(() => {
+        if (isActive) setProfileAddress('');
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [profileId, user?.id]);
 
   React.useEffect(() => {
     if (user) {
@@ -134,7 +163,7 @@ function CartView(): React.ReactElement {
 
   const handleMinus = (p: CartItemData) => {
     if (p.cantidad > 1) updateQuantity(p.id, p.cantidad - 1);
-    else alert('Desea eliminar del carrito?');
+    else alert('¿Deseas eliminar el producto del carrito?');
   };
 
   const handlePlus = (p: CartItemData) => {
@@ -151,7 +180,7 @@ function CartView(): React.ReactElement {
       <div className="cart-layout">
         <div className="cart__list">
           {cartProducts.length === 0 && (
-            <div className="cart__empty">Tu carrito esta vacio.</div>
+            <div className="cart__empty">Tu carrito está vacío.</div>
           )}
           {cartProducts.map((p) => (
             <CartItem
@@ -168,7 +197,7 @@ function CartView(): React.ReactElement {
 
           <div className="summary-items">
             <div className="summary-items__title">
-              Articulos en el pedido ({totalItems})
+              Artículos en el pedido ({totalItems})
             </div>
             <ul className="summary-items__list">
               {cartProducts.map((item) => (
@@ -190,7 +219,7 @@ function CartView(): React.ReactElement {
           </div>
 
           <div className="summary-row">
-            <div className="summary-row__label">Envio estimado</div>
+            <div className="summary-row__label">Envío estimado</div>
             <div className="summary-row__value">
               <div>{shippingEstimate ? (shippingPrice === 0 ? 'Gratis' : formatPrice(shippingPrice)) : 'Por estimar'}</div>
               {shippingEstimate && (
@@ -201,6 +230,12 @@ function CartView(): React.ReactElement {
               )}
             </div>
           </div>
+          {profileAddress && (
+            <div className="summary-row summary-row--note">
+              <div className="summary-row__label">Dirección registrada</div>
+              <div className="summary-row__value">{profileAddress}</div>
+            </div>
+          )}
           {!shippingEstimate && (
             user
               ? <button className="address-btn" type="button" onClick={goAddresses}>Agregar dirección de envío</button>
