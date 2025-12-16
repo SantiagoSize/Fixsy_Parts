@@ -1,7 +1,5 @@
 import React from 'react';
 
-export type SortOption = 'featured' | 'price_asc' | 'price_desc' | 'recent';
-
 export type TagOption = { value: string; count: number };
 
 type Props = {
@@ -13,10 +11,10 @@ type Props = {
   tags: TagOption[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
-  sortOption: SortOption;
-  onSortChange: (sort: SortOption) => void;
   onReset?: () => void;
   hideSearch?: boolean;
+  offersOnly?: boolean;
+  onToggleOffers?: () => void;
 };
 
 export default function CatalogFilters({
@@ -28,88 +26,174 @@ export default function CatalogFilters({
   tags,
   selectedTags,
   onToggleTag,
-  sortOption,
-  onSortChange,
   onReset,
   hideSearch = false,
+  offersOnly = false,
+  onToggleOffers = () => {},
 }: Props) {
+  const [openPanel, setOpenPanel] = React.useState<'categories' | 'tags' | null>(null);
+  const selectedLabel = selectedCategory === 'all' ? 'Todos' : selectedCategory;
+  const tagsLabel = selectedTags.length === 0
+    ? 'Seleccionar'
+    : selectedTags.length === 1
+      ? `#${selectedTags[0]}`
+      : `${selectedTags.length} tags seleccionados`;
+
+  const togglePanel = (panel: 'categories' | 'tags') => {
+    setOpenPanel((prev) => (prev === panel ? null : panel));
+  };
+
+  const handleCategorySelect = (category: string) => {
+    onCategoryChange(category);
+    setOpenPanel(null);
+  };
+
   return (
     <div className="catalog-filters">
-      {!hideSearch && (
-        <div className="filter-section">
-          <div className="filter-section__header">
-            <h4>Buscar</h4>
-          </div>
-          <div className="filter-section__body">
-            <label className="catalog-search">
-              <span className="catalog-search__icon" aria-hidden>🔍</span>
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Buscar por nombre, categoría o palabra clave…"
-                className="catalog-search__input"
-              />
-            </label>
-          </div>
-        </div>
-      )}
-
-      <div className="filter-section">
-        <div className="filter-section__header">
-          <h4>Categorías</h4>
-          {onReset && (
-            <button type="button" className="catalog-reset catalog-reset--inline" onClick={onReset}>
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-        <div className="filter-section__body">
-          <div className="catalog-chips">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                type="button"
-                className={`catalog-chip catalog-chip--pill ${selectedCategory === cat ? 'is-active' : ''}`}
-                onClick={() => onCategoryChange(cat)}
-              >
-                {cat === 'all' ? 'Todos' : cat}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="sidebar-card sidebar-card--title">
+        <h3>Filtros</h3>
       </div>
 
-      {tags.length > 0 && (
-        <div className="filter-section">
-          <div className="filter-section__header">
-            <h4>Tags</h4>
-          </div>
-          <div className="filter-section__body">
-            <div className="catalog-chips catalog-chips--wrap">
-              {tags.map(tag => {
+      {!hideSearch && (
+        <section className="sidebar-card sidebar-card--search">
+          <label className="catalog-search">
+            <span className="catalog-search__icon" aria-hidden>
+              🔍
+            </span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Buscar por nombre, categoría o palabra clave"
+              className="catalog-search__input"
+            />
+          </label>
+        </section>
+      )}
+
+      <section className="sidebar-card sidebar-card--cascade">
+        <header className="sidebar-card__header">
+          <h4 className="sidebar-card__title">Categorías</h4>
+        </header>
+        <div className="sidebar-card__body">
+          <button
+            type="button"
+            className={`cascade-trigger ${openPanel === 'categories' ? 'is-open' : ''}`}
+            onClick={() => togglePanel('categories')}
+            aria-expanded={openPanel === 'categories'}
+          >
+            <span className="cascade-trigger__value">{selectedLabel}</span>
+            <span className="cascade-trigger__arrow" aria-hidden>
+              ▶
+            </span>
+          </button>
+          {openPanel === 'categories' && (
+            <div className="cascade-panel" role="listbox" aria-label="Seleccionar categoría">
+              <button
+                type="button"
+                role="option"
+                aria-selected={selectedCategory === 'all'}
+                className={`cascade-item ${selectedCategory === 'all' ? 'is-active' : ''}`}
+                onClick={() => handleCategorySelect('all')}
+              >
+                <span className="cascade-item__content">
+                  <span className="cascade-indicator" aria-hidden />
+                  <span>Todos</span>
+                </span>
+                <span className="cascade-item__right">✓</span>
+              </button>
+              {categories
+                .filter((cat) => cat !== 'all')
+                .map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    role="option"
+                    aria-selected={selectedCategory === cat}
+                    className={`cascade-item ${selectedCategory === cat ? 'is-active' : ''}`}
+                    onClick={() => handleCategorySelect(cat)}
+                  >
+                    <span className="cascade-item__content">
+                      <span className="cascade-indicator" aria-hidden />
+                      <span>{cat}</span>
+                    </span>
+                    <span className="cascade-item__right">✓</span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="sidebar-card sidebar-card--cascade">
+        <header className="sidebar-card__header">
+          <h4 className="sidebar-card__title">Tags</h4>
+        </header>
+        <div className="sidebar-card__body">
+          <button
+            type="button"
+            className={`cascade-trigger ${openPanel === 'tags' ? 'is-open' : ''}`}
+            onClick={() => togglePanel('tags')}
+            aria-expanded={openPanel === 'tags'}
+          >
+            <span className="cascade-trigger__value">{tagsLabel}</span>
+            <span className="cascade-trigger__arrow" aria-hidden>
+              ▶
+            </span>
+          </button>
+          {openPanel === 'tags' && (
+            <div className="cascade-panel cascade-panel--tags" role="group" aria-label="Tags">
+              {tags.map((tag) => {
                 const isActive = selectedTags.includes(tag.value);
                 return (
                   <button
                     key={tag.value}
                     type="button"
-                    className={`catalog-chip catalog-chip--tag ${isActive ? 'is-active' : ''}`}
+                    className={`cascade-item tag-item ${isActive ? 'is-active' : ''}`}
                     onClick={() => onToggleTag(tag.value)}
                     aria-pressed={isActive}
                   >
-                    #{tag.value}
-                    <span className="catalog-chip__count">{tag.count}</span>
+                    <span className="cascade-item__content">
+                      <span className="tag-item__indicator" aria-hidden />
+                      <span>#{tag.value}</span>
+                    </span>
+                    <span className="tag-count">{tag.count}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </section>
 
-      <div className="filter-section filter-section--footer">
-        <div className="catalog-filter-meta">Usa varios tags para refinar los resultados.</div>
-      </div>
+      <section className="sidebar-card sidebar-card--offers">
+        <header className="sidebar-card__header">
+          <h4 className="sidebar-card__title">Ofertas</h4>
+        </header>
+        <div className="sidebar-card__body">
+          <button
+            type="button"
+            className={`offers-toggle ${offersOnly ? 'is-active' : ''}`}
+            onClick={onToggleOffers}
+            aria-pressed={offersOnly}
+          >
+            <span>{offersOnly ? 'Solo ofertas (activo)' : 'Mostrar solo ofertas'}</span>
+            <span className="offers-toggle__icon" aria-hidden>
+              🔥
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <button
+        type="button"
+        className="sidebar-action-btn sidebar-action-btn--danger"
+        onClick={() => {
+          onReset?.();
+        }}
+      >
+        Limpiar filtros
+      </button>
     </div>
   );
 }

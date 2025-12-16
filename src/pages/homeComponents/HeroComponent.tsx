@@ -1,9 +1,16 @@
-import { useNavigate } from 'react-router-dom';
 import React from 'react';
 
-function HeroComponent() {
-  const navigate = useNavigate();
-  const goCatalog = React.useCallback(() => navigate('/catalogo'), [navigate]);
+type HeroComponentProps = {
+  primaryLabel?: string;
+  onPrimaryAction?: () => void;
+};
+
+function HeroComponent({ primaryLabel = 'Conocer Fixsy Parts', onPrimaryAction }: HeroComponentProps) {
+  const handleAction = React.useCallback(() => {
+    if (onPrimaryAction) {
+      onPrimaryAction();
+    }
+  }, [onPrimaryAction]);
 
   return (
     <section className="home-hero">
@@ -14,8 +21,8 @@ function HeroComponent() {
         soporte experto cuando lo necesites.
       </p>
       <div className="home-hero__actions">
-        <button type="button" className="home-hero__button" onClick={goCatalog}>
-          Ver Catalogo
+        <button type="button" className="home-hero__button" onClick={handleAction}>
+          {primaryLabel}
         </button>
       </div>
     </section>

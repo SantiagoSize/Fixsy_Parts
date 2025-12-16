@@ -1,6 +1,7 @@
 import React from 'react';
 import './ProductItem.css';
 import { formatPrice, getDisplayPrice } from '../utils/price';
+import { getProductImages } from '../utils/productImages';
 
 export type ProductLike = {
   id: string | number;
@@ -25,21 +26,31 @@ type Props = {
 };
 
 export default function ProductItem({ product, variant = 'catalog', actions, onClick }: Props) {
-  const images = React.useMemo(() => {
-    const list = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
-    if (list.length === 0 && product.imagen) list.push(product.imagen);
-    if (list.length === 0 && product.imageUrl) list.push(product.imageUrl);
-    return list;
-  }, [product.images, product.imagen, product.imageUrl]);
-  const imageSrc = images[0] || '';
+  const resolvedImages = React.useMemo(() => getProductImages(product), [product]);
+  const placeholderSrc = '/images/placeholder.png';
+  const finalImageSrc = resolvedImages[0] || placeholderSrc;
+  const hasLoggedProduct = React.useRef(false);
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const imageEl = event.currentTarget;
+    imageEl.onerror = null;
+    imageEl.src = placeholderSrc;
+  };
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (hasLoggedProduct.current) return;
+    console.log('[dev] ProductItem product', product);
+    hasLoggedProduct.current = true;
+  }, [product]);
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    console.log('[dev] ProductItem image src', finalImageSrc);
+  }, [finalImageSrc]);
 
   const wrapperClass = `product-card ${variant === 'compact' ? 'product-card--compact' : 'product-card--catalog'} ${onClick ? 'product-card--clickable' : ''}`;
   const imgWrapClass = `product-image-wrap ${variant === 'compact' ? 'product-image-wrap--small' : 'product-image-wrap--regular'}`;
-
-  const placeholderSvg = React.useMemo(() => {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%236b7280' font-size='14'>Sin imagen</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, []);
 
   const displayPrice = getDisplayPrice(product);
   const badgeLabel = displayPrice.hasDiscount ? 'Oferta' : (product as any).isFeatured ? 'Destacado' : null;
@@ -47,7 +58,7 @@ export default function ProductItem({ product, variant = 'catalog', actions, onC
   return (
     <article className={wrapperClass} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : -1}>
       <div className={imgWrapClass}>
-        <img className="product-image" src={imageSrc || placeholderSvg} alt={product.nombre} />
+        <img className="product-image" src={finalImageSrc} alt={product.nombre} onError={handleImageError} />
       </div>
       <div className="product-info">
         <h3 className="product-title">{product.nombre}</h3>

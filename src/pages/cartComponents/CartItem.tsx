@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
+import { getProductImages } from '../../utils/productImages';
 
 export type CartItemData = {
   id: string | number;
@@ -19,19 +20,21 @@ type Props = {
 };
 
 function CartItem({ product, onMinus, onPlus, onRemove }: Props): React.ReactElement {
-  const placeholder = React.useMemo(() => {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%236b7280' font-size='12'>Sin imagen</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  }, []);
-
-  const imgSrc = product.imagen || placeholder;
+  const resolvedImages = React.useMemo(() => getProductImages(product), [product]);
+  const placeholderSrc = '/images/placeholder.png';
+  const imgSrc = resolvedImages[0] || product.imagen || placeholderSrc;
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const imageEl = event.currentTarget;
+    imageEl.onerror = null;
+    imageEl.src = placeholderSrc;
+  };
   const displayPrice = getDisplayPrice(product);
 
   return (
     <div className="cart-item">
       <div className="cart-item__main">
         <div className="cart-item__image-wrapper">
-          <img src={imgSrc} alt={product.nombre} />
+          <img src={imgSrc} alt={product.nombre} onError={handleImageError} />
         </div>
         <div className="cart-item__info">
           <h3 className="cart-item__name">{product.nombre}</h3>

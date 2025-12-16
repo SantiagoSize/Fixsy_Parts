@@ -89,11 +89,7 @@ export default function MostVisited(): React.ReactElement {
     );
   }
 
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'>` +
-    `<rect width='100%' height='100%' fill='%23f2f1f2'/>` +
-    `<text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='18'>Imagen</text>` +
-    `</svg>`;
-  const placeholderSrc = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const placeholderSrc = '/images/placeholder.png';
 
   return (
     <section className="mv mv--offers">
@@ -108,7 +104,7 @@ export default function MostVisited(): React.ReactElement {
           className="mv__cta"
           onClick={() => navigate('/catalogo?filtro=ofertas')}
         >
-          Ver catálogo
+          Ver ofertas
         </button>
       </div>
 
@@ -133,7 +129,11 @@ export default function MostVisited(): React.ReactElement {
                 className="offer-card__image"
                 src={buildProductImageUrl((Array.isArray(p.images) && p.images[0]) ? p.images[0] : (p.imagen || '')) || placeholderSrc}
                 alt={p.nombre}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholderSrc; }}
+                onError={(e) => {
+                  const imgEl = e.currentTarget as HTMLImageElement;
+                  imgEl.onerror = null;
+                  imgEl.src = placeholderSrc;
+                }}
               />
             </div>
             <div className="offer-card__body">

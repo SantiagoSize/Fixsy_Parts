@@ -4,7 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { toast } from '../../hooks/useToast';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './ProductDetail.css';
-import { apiFetch, PRODUCTS_API_BASE } from '../../utils/api';
+import { apiFetch, buildProductImageUrl, PRODUCTS_API_BASE } from '../../utils/api';
 import { Product } from '../../types/product';
 import { getProductImages, getProductPlaceholder } from '../../utils/productImages';
 import placeholderProduct from '../../assets/placeholder-product.png';
@@ -89,11 +89,18 @@ function ProductDetail(): React.ReactElement {
   if (error) return <div className="pd-container">{error}</div>;
   if (!product) return <div className="pd-container">Datos del producto no disponibles.</div>;
 
+  const fallbackPlaceholder = '/images/placeholder.png';
   const placeholderSrc = placeholderProduct || getProductPlaceholder(product.nombre);
   const displayPrice = getDisplayPrice(product as any);
   const inCartQty = items.find(ci => String(ci.productId) === String(product.id))?.quantity ?? 0;
   const available = Math.max(0, (product.stock ?? 0) - inCartQty);
   const isAvailable = (product.isActive !== false) && (product.stock ?? 0) > 0;
+  const basePrice = Number((product.precioNormal ?? (product as any).precio ?? 0)) || 0;
+  const explicitOfferPrice = (product.precioOferta ?? (product as any).precioOferta ?? (product as any).offerPrice);
+  const isOnOffer = (product as any).oferta === true
+    || explicitOfferPrice != null
+    || (typeof explicitOfferPrice === 'number' && explicitOfferPrice < basePrice);
+  const shortDescription = product.descripcionCorta && product.descripcionCorta !== (product.descripcionLarga || product.descripcion) ? product.descripcionCorta : '';
 
   const handleAdd = () => {
     if (available < 1 || !isAvailable) {
@@ -148,7 +155,8 @@ function ProductDetail(): React.ReactElement {
     }
   };
 
-  const currentSrc = images[current] || product.imageUrl || placeholderSrc;
+  const safeProductImage = buildProductImageUrl(product.imageUrl || product.imagen || '');
+  const currentSrc = images[current] || safeProductImage || placeholderSrc;
   const category = (product as any).categoria || (product as any).categoriaNombre || 'Repuesto';
   const rawTags = (product as any).tags;
   const tags = Array.isArray(rawTags)
@@ -188,7 +196,7 @@ function ProductDetail(): React.ReactElement {
                 onError={(e) => {
                   const imgEl = e.currentTarget as HTMLImageElement;
                   imgEl.onerror = null;
-                  imgEl.src = placeholderSrc;
+                  imgEl.src = fallbackPlaceholder;
                 }}
               />
               {hasMultiple && (
@@ -213,7 +221,7 @@ function ProductDetail(): React.ReactElement {
                       onError={(e) => {
                         const imgEl = e.currentTarget as HTMLImageElement;
                         imgEl.onerror = null;
-                        imgEl.src = placeholderSrc;
+                        imgEl.src = fallbackPlaceholder;
                       }}
                     />
                   </button>
@@ -223,13 +231,13 @@ function ProductDetail(): React.ReactElement {
           </div>
 
           <div className="productDetail__info">
-            <div className="pd-badges">
-              <span className="catalog-chip catalog-chip--category">{category}</span>
-              {displayPrice.hasDiscount && <span className="catalog-chip catalog-chip--tag is-offer">Oferta</span>}
-              {(product as any).isFeatured && <span className="catalog-chip catalog-chip--tag is-featured">Destacado</span>}
-            </div>
+            {isOnOffer && (
+              <div className="pd-badges">
+                <span className="catalog-chip catalog-chip--tag is-offer">Oferta</span>
+              </div>
+            )}
             <h1 className="pd-title">{product.nombre}</h1>
-            <div className="pd-rating">★★★★★ <span className="pd-rating__hint">Calificación</span></div>
+            {shortDescription && <p className="pd-short">{shortDescription}</p>}
             {highlightList.length > 0 && (
               <ul className="pd-highlights">
                 {highlightList.map((item, idx) => <li key={idx}>{item}</li>)}

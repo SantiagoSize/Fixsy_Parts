@@ -21,6 +21,8 @@ type Category = {
   image: string;
 };
 
+const HOME_VIDEO_URL = 'https://www.youtube.com/embed/EDSTDHU6oFI';
+
 function Home() {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
@@ -41,34 +43,36 @@ function Home() {
     setVisibleCategories(categories.slice(0, limit));
   }, [categories, isMobile, isTablet]);
 
+  const [isVideoOpen, setIsVideoOpen] = React.useState(false);
+
+  const openVideo = () => setIsVideoOpen(true);
+  const closeVideo = () => setIsVideoOpen(false);
+
+  React.useEffect(() => {
+    if (!isVideoOpen) return undefined;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeVideo();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isVideoOpen]);
+
   return (
     <div className="home-shell">
       <div className="home-container container-xxl">
         <div className="home-hero-block row g-3 align-items-stretch">
           <div className="home-hero-col home-hero-col--text col-12 col-lg-4 col-xl-5">
-            <HeroComponent />
+            <HeroComponent
+              primaryLabel="Conocer Fixsy Parts"
+              onPrimaryAction={openVideo}
+            />
           </div>
           <div className="home-hero-col home-hero-col--carousel col-12 col-lg-8 col-xl-7">
             <OffersCarousel />
           </div>
         </div>
-
-        <section className="home-section home-video my-5">
-          <div className="container-fluid px-0">
-            <div className="row justify-content-center">
-              <div className="col-12 col-lg-10 col-xl-8">
-                <div className="ratio ratio-16x9 shadow rounded overflow-hidden">
-                  <iframe
-                    src="https://www.youtube.com/embed/EDSTDHU6oFI?rel=0"
-                    title="Mecánica Automotriz en Acción"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  ></iframe>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section className="home-section home-categories">
           <div className="section-header categories-header">
@@ -110,6 +114,29 @@ function Home() {
 
         <MostVisited />
       </div>
+      {isVideoOpen && (
+        <div className="home-video-modal" role="dialog" aria-modal="true" aria-label="Video institucional Fixsy Parts">
+          <div className="home-video-modal__backdrop" onClick={closeVideo} />
+          <div className="home-video-modal__content">
+            <button
+              type="button"
+              className="home-video-modal__close"
+              aria-label="Cerrar video institucional"
+              onClick={closeVideo}
+            >
+              ×
+            </button>
+            <div className="home-video-modal__frame">
+              <iframe
+                src={`${HOME_VIDEO_URL}?rel=0`}
+                title="Fixsy Parts en acción"
+                allowFullScreen
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

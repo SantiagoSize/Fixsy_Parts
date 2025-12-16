@@ -113,6 +113,12 @@ function Checkout(): React.ReactElement {
   const total = subtotal + iva + shippingCost;
   const totalItems = cartItems.reduce((sum, it) => sum + it.cantidad, 0);
 
+  React.useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [items.length, navigate]);
+
   const handleChange = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
     setError(null);
@@ -220,7 +226,7 @@ function Checkout(): React.ReactElement {
       return;
     }
     if (!/.+@.+\..+/.test(form.email)) { setError('Ingresa un email valido.'); return; }
-    if (!user?.id) { navigate('/login'); return; }
+    // No login requerido: cualquier usuario puede completar la compra
     setLoading(true);
     try {
       const payload = buildOrderPayload();

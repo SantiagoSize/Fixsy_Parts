@@ -7,6 +7,20 @@ import { estimateShipping, ShippingAddress } from '../../utils/shipping';
 import { formatPrice, getDisplayPrice } from '../../utils/price';
 import './CartView.css';
 import CartItem, { CartItemData } from './CartItem';
+import { CHILE_REGIONES } from '../../data/chileDpa';
+
+const REGION_NAMES = CHILE_REGIONES.map((region) => region.nombre);
+
+function provincesFor(regionName: string): string[] {
+  const region = CHILE_REGIONES.find((regionItem) => regionItem.nombre === regionName);
+  return region ? region.provincias.map((province) => province.nombre) : [];
+}
+
+function communesFor(regionName: string, provinceName: string): string[] {
+  const region = CHILE_REGIONES.find((regionItem) => regionItem.nombre === regionName);
+  const province = region?.provincias.find((provinceItem) => provinceItem.nombre === provinceName);
+  return province ? province.comunas.map((comuna) => comuna.nombre) : [];
+}
 
 // Suposicion: el subtotal del carrito se considera neto (sin IVA). El total se calcula sumando IVA + envio.
 function CartView(): React.ReactElement {
@@ -36,9 +50,8 @@ function CartView(): React.ReactElement {
 
   const [selectedAddressId, setSelectedAddressId] = React.useState<string | null>(null);
   const [guestAddress, setGuestAddress] = React.useState<ShippingAddress | null>(null);
-  const [guestSurveyOpen, setGuestSurveyOpen] = React.useState(!user);
+  const [guestSurveyOpen, setGuestSurveyOpen] = React.useState(false);
   const [guestForm, setGuestForm] = React.useState({
-    address: '',
     region: '',
     province: '',
     commune: '',
@@ -68,12 +81,14 @@ function CartView(): React.ReactElement {
   React.useEffect(() => {
     if (user) {
       setGuestSurveyOpen(false);
-      return;
+      setGuestError(null);
     }
-    if (!guestAddress) {
-      setGuestSurveyOpen(true);
-    }
-  }, [user, guestAddress]);
+  }, [user]);
+
+  const closeGuestSurvey = () => {
+    setGuestSurveyOpen(false);
+    setGuestError(null);
+  };
 
   const shippingAddress: ShippingAddress | null = user
     ? (selectedAddress ? mapToShippingAddress(selectedAddress) : null)
@@ -86,8 +101,20 @@ function CartView(): React.ReactElement {
   const totalItems = cartProducts.reduce((acc, item) => acc + item.cantidad, 0);
   const goAddresses = () => navigate('/profile');
 
+  const provs = provincesFor(guestForm.region);
+  const comms = communesFor(guestForm.region, guestForm.province);
+
   const handleGuestFormChange = (field: keyof typeof guestForm, value: string) => {
-    setGuestForm((prev) => ({ ...prev, [field]: value }));
+    setGuestForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'region') {
+        next.province = '';
+        next.commune = '';
+      } else if (field === 'province') {
+        next.commune = '';
+      }
+      return next;
+    });
     setGuestError(null);
   };
 
@@ -102,7 +129,7 @@ function CartView(): React.ReactElement {
       provincia: guestForm.province.trim(),
       comuna: guestForm.commune.trim(),
     });
-    setGuestSurveyOpen(false);
+    closeGuestSurvey();
   };
 
   const handleMinus = (p: CartItemData) => {
@@ -226,55 +253,72 @@ function CartView(): React.ReactElement {
             <div className="summary-row__value">{formatPrice(total)}</div>
           </div>
 
-          <button className="pay-btn" onClick={() => navigate('/checkout')}>Pagar</button>
+          <button
+            className={`checkout-btn ${items.length > 0 ? 'active' : 'disabled'}`}
+            disabled={items.length === 0}
+            onClick={() => {
+              if (items.length === 0) return;
+              navigate('/checkout');
+            }}
+            type="button"
+          >
+            Pagar
+          </button>
         </aside>
       </div>
 
       {guestSurveyOpen && !user && (
         <div className="guest-survey" role="dialog" aria-modal="true">
-          <div className="guest-survey__backdrop" />
+          <div className="guest-survey__backdrop" onClick={closeGuestSurvey} />
           <div className="guest-survey__panel">
-            <h3>Cuéntanos dónde quieres recibir el pedido</h3>
-            <p>Es una mini encuesta para calcular tu envío estimado.</p>
+            <div className="guest-survey__header">
+              <div>
+                <h3>Estimamos tu envío</h3>
+                <p className="guest-survey__subtext">Selecciona región, provincia y comuna para calcular el costo estimado.</p>
+              </div>
+            </div>
             <form onSubmit={handleGuestSurveySubmit} className="guest-survey__form">
               <label>
-                Dirección completa
-                <input
-                  type="text"
-                  value={guestForm.address}
-                  onChange={(e) => handleGuestFormChange('address', e.target.value)}
-                  placeholder="Calle, número, piso"
-                />
-              </label>
-              <label>
                 Región
-                <input
-                  type="text"
+                <select
                   value={guestForm.region}
                   onChange={(e) => handleGuestFormChange('region', e.target.value)}
-                  placeholder="Ej. Metropolitana"
-                />
+                >
+                  <option value="">Seleccione región</option>
+                  {REGION_NAMES.map((region) => (
+                    <option key={region} value={region}>{region}</option>
+                  ))}
+                </select>
               </label>
               <label>
                 Provincia
-                <input
-                  type="text"
+                <select
                   value={guestForm.province}
                   onChange={(e) => handleGuestFormChange('province', e.target.value)}
-                  placeholder="Ej. Santiago"
-                />
+                  disabled={!guestForm.region}
+                >
+                  <option value="">Seleccione provincia</option>
+                  {provs.map((province) => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </select>
               </label>
               <label>
                 Comuna
-                <input
-                  type="text"
+                <select
                   value={guestForm.commune}
                   onChange={(e) => handleGuestFormChange('commune', e.target.value)}
-                  placeholder="Ej. Providencia"
-                />
+                  disabled={!guestForm.province}
+                >
+                  <option value="">Seleccione comuna</option>
+                  {comms.map((comuna) => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
               </label>
               {guestError && <p className="guest-survey__error">{guestError}</p>}
               <div className="guest-survey__actions">
+                <button className="pay-btn pay-btn--back" type="button" onClick={closeGuestSurvey}>Volver</button>
                 <button className="pay-btn" type="submit">Guardar y continuar</button>
               </div>
             </form>

@@ -17,6 +17,7 @@ type CartNotificationProps = {
 
 export default function CartNotification({ visible, data, onClose }: CartNotificationProps) {
   const navigate = useNavigate();
+  const placeholderSrc = '/images/placeholder.png';
 
   const handleViewCart = () => {
     onClose();
@@ -53,14 +54,16 @@ export default function CartNotification({ visible, data, onClose }: CartNotific
           <p className="cart-notification__title">¡Agregado al carrito!</p>
           <div className="cart-notification__product">
             {data.productImage && (
-              <img 
-                src={data.productImage} 
-                alt={data.productName}
-                className="cart-notification__product-img"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
+            <img 
+              src={data.productImage} 
+              alt={data.productName}
+              className="cart-notification__product-img"
+              onError={(e) => {
+                const imgEl = e.currentTarget as HTMLImageElement;
+                imgEl.onerror = null;
+                imgEl.src = placeholderSrc;
+              }}
+            />
             )}
             <div className="cart-notification__product-details">
               <span className="cart-notification__product-name">{data.productName}</span>
@@ -114,4 +117,3 @@ export default function CartNotification({ visible, data, onClose }: CartNotific
     </div>
   );
 }
-

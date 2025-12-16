@@ -27,9 +27,12 @@ function buildPlaceholder(nombre: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+const PUBLIC_PLACEHOLDER = '/images/placeholder.png';
+
 export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }: Props) {
   const [hoverIndex, setHoverIndex] = React.useState(0);
   const hoverTimer = React.useRef<number | null>(null);
+  const hasLoggedProduct = React.useRef(false);
 
   const images = React.useMemo(() => {
     // Intentar obtener imágenes procesadas
@@ -65,8 +68,10 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
     return [];
   }, [product]);
 
+  const fallbackPlaceholder = PUBLIC_PLACEHOLDER;
   const placeholder = React.useMemo(() => getProductPlaceholder(product.nombre), [product.nombre]);
-  const imageSrc = images[0] || placeholderProduct || placeholder;
+  const placeholderSrc = placeholderProduct || placeholder;
+  const imageSrc = images[0] || placeholderSrc;
   const displayPrice = getDisplayPrice(product as any);
   const hasOffer = Boolean(product.isOffer || displayPrice.hasDiscount);
   const isAvailable = (product.isActive ?? true) && (product.stock ?? 0) > 0;
@@ -87,6 +92,23 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
 
   const cardClass = `catalog-card ${isList ? 'catalog-card--list' : 'catalog-card--grid'}`;
   const currentImage = images[(hoverIndex % Math.max(images.length, 1))] || imageSrc;
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const imageEl = event.currentTarget;
+    imageEl.onerror = null;
+    imageEl.src = fallbackPlaceholder;
+  };
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (hasLoggedProduct.current) return;
+    console.log('[dev] CatalogProductCard product', product);
+    hasLoggedProduct.current = true;
+  }, [product]);
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    console.log('[dev] CatalogProductCard image src', currentImage);
+  }, [currentImage]);
 
   const startHoverCycle = React.useCallback(() => {
     if (images.length <= 1) return;
@@ -120,11 +142,7 @@ export function CatalogProductCard({ product, onAdd, onView, variant = 'grid' }:
           src={currentImage}
           alt={product.nombre}
           className="catalog-card__image"
-          onError={(e) => {
-            const imgEl = e.currentTarget as HTMLImageElement;
-            imgEl.onerror = null;
-            imgEl.src = placeholderProduct || placeholder;
-          }}
+          onError={handleImageError}
         />
       </div>
 

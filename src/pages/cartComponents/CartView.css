@@ -419,9 +419,69 @@
   color: #b91c1c;
   font-size: 0.85rem;
 }
+.guest-survey__form select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #d6deed;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fff;
+  color: #1f2937;
+}
+
+.guest-survey__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.guest-survey__header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.guest-survey__subtext {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
 .guest-survey__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.pay-btn.pay-btn--back {
+  background: #d32f2f;
+  border-color: #d32f2f;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+.checkout-btn.disabled {
+  background: #cbd1dc;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #cbd1dc;
+}
+.checkout-btn.active {
+  background: #ff6d00;
+  border-color: #ff6d00;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255, 109, 0, 0.25);
+}
+.checkout-btn.active:hover {
+  filter: brightness(0.95);
 }
 
 @media (max-width: 640px) {

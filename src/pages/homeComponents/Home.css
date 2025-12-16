@@ -407,6 +407,68 @@
 
 @media (min-width: 960px) {}
 
+.home-video-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 3000;
+  padding: 1.5rem;
+}
+
+.home-video-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.home-video-modal__content {
+  position: relative;
+  width: min(960px, 100%);
+  max-width: 960px;
+  background: #050505;
+  border-radius: 18px;
+  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.home-video-modal__frame {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+}
+
+.home-video-modal__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.home-video-modal__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 120ms ease, background 150ms ease;
+}
+
+.home-video-modal__close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
 /* Best products */
 .home-best {
   border: 1px solid #e5e7eb;

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { apiFetch, PRODUCTS_API_BASE } from '../../utils/api';
 import { Product } from '../../types/product';
-import CatalogFilters, { SortOption, TagOption } from '../../components/catalog/CatalogFilters';
+import CatalogFilters, { TagOption } from '../../components/catalog/CatalogFilters';
 import CatalogGrid from '../../components/catalog/CatalogGrid';
 import { CatalogCardProduct } from '../../components/catalog/CatalogProductCard';
 import Pagination from '../../components/catalog/Pagination';
@@ -131,6 +131,8 @@ function finalPrice(product: CatalogCardProduct) {
   return display.final;
 }
 
+type SortOption = 'price_asc' | 'price_desc' | 'recent';
+
 export default function Catalogo(): React.ReactElement {
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -144,10 +146,10 @@ export default function Catalogo(): React.ReactElement {
   );
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   const [searchTerm, setSearchTerm] = React.useState(() => searchParams.get('q') || '');
-  const [sortOption, setSortOption] = React.useState<SortOption>('featured');
+  const [sortOption, setSortOption] = React.useState<SortOption>('recent');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
-
+  const [onlyOffers, setOnlyOffers] = React.useState(false);
   React.useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
@@ -241,6 +243,16 @@ export default function Catalogo(): React.ReactElement {
       selectedTags.length === 0 || p.tags.some(tag => selectedTags.includes(tag.toLowerCase()));
 
     let list = products.filter(p => matchCategory(p) && matchTags(p) && matchTerm(p));
+    if (onlyOffers) {
+      list = list.filter((p) => {
+        if ((p as any).oferta === true) return true;
+        const discountPrice = p.precioOferta;
+        if (discountPrice != null) {
+          return true;
+        }
+        return typeof p.precioOferta === 'number' && p.precioOferta < p.precioNormal;
+      });
+    }
 
     const compareRelevance = (a: NormalizedProduct, b: NormalizedProduct) => {
       const featured = Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
@@ -268,14 +280,14 @@ export default function Catalogo(): React.ReactElement {
       case 'recent':
         list = [...list].sort((a, b) => b.order - a.order);
         break;
-      case 'featured':
+      case 'offers':
       default:
         list = [...list].sort(compareRelevance);
         break;
     }
 
     return list;
-  }, [products, searchTerm, selectedCategory, selectedTags, sortOption]);
+  }, [products, searchTerm, selectedCategory, selectedTags, sortOption, onlyOffers]);
 
   const itemsPerPage = isMobile ? 6 : isTablet ? 9 : 12;
   const totalItems = filteredProducts.length;
@@ -316,28 +328,23 @@ export default function Catalogo(): React.ReactElement {
     setSelectedCategory(CATEGORY_ALL);
     setSelectedTags([]);
     setSearchTerm('');
-    setSortOption('featured');
+    setSortOption('recent');
+    setOnlyOffers(false);
   };
 
-  const hasResults = filteredProducts.length > 0;
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
   const layoutClass = `catalog-shell catalog-layout ${isMobile ? 'catalog-layout--stack' : ''}`;
+  const headerMessage = filteredProducts.length > 0
+    ? `${filteredProducts.length} productos encontrados`
+    : onlyOffers
+      ? 'No hay productos en oferta por el momento'
+      : 'Sin resultados con los filtros actuales';
 
   return (
     <section className="catalog-page">
-      <div className="catalog-hero container-xxl">
-        <p className="catalog-eyebrow">Fixsy Parts</p>
-        <h1 className="catalog-title">Catálogo de productos</h1>
-        <p className="catalog-subtitle">Explora repuestos originales y alternativos con filtros rápidos por categoría, tags y ofertas.</p>
-        {isMobile && (
-          <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-filter-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
-            </svg>
-            Filtros
-          </button>
-        )}
-      </div>
-
       <div className={layoutClass}>
         {!isMobile && (
           <aside className="catalog-sidebar">
@@ -346,25 +353,40 @@ export default function Catalogo(): React.ReactElement {
               onSearchChange={setSearchTerm}
               categories={categories}
               selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              onCategoryChange={handleCategoryChange}
               tags={tags}
               selectedTags={selectedTags}
               onToggleTag={toggleTag}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
               onReset={handleReset}
               hideSearch
+              offersOnly={onlyOffers}
+              onToggleOffers={() => setOnlyOffers((prev) => !prev)}
             />
           </aside>
         )}
 
-        <div className="catalog-content catalog-results">
-          <div className="catalog-content__top catalog-results__header">
-            <div className="catalog-meta">
-              {loading && <span>Cargando catálogo...</span>}
+        <div className="catalog-main">
+          <div className="catalog-hero container-xxl">
+            <p className="catalog-eyebrow">Fixsy Parts</p>
+            <h1 className="catalog-title">Catálogo de productos</h1>
+            <p className="catalog-subtitle">Explora repuestos originales y alternativos con filtros rápidos por categoría, tags y ofertas.</p>
+            {isMobile && (
+              <button type="button" onClick={() => setFiltersOpen(true)} className="catalog-mobile-filter-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+                </svg>
+                Filtros
+              </button>
+            )}
+          </div>
+
+          <div className="catalog-content catalog-results">
+            <div className="catalog-content__top catalog-results__header">
+              <div className="catalog-meta">
+                {loading && <span>Cargando catálogo...</span>}
               {!loading && error && <span className="catalog-meta__error">{error}</span>}
               {!loading && !error && (
-                <span>{hasResults ? `${filteredProducts.length} productos encontrados` : 'Sin resultados con los filtros actuales'}</span>
+                <span>{headerMessage}</span>
               )}
             </div>
             <div className="catalog-view">
@@ -376,10 +398,8 @@ export default function Catalogo(): React.ReactElement {
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
                   className="catalog-sort__select form-select"
                 >
-                  <option value="featured">Destacados</option>
                   <option value="price_asc">Menor precio</option>
                   <option value="price_desc">Mayor precio</option>
-                  <option value="recent">Más recientes</option>
                 </select>
               </div>
             </div>
@@ -394,7 +414,7 @@ export default function Catalogo(): React.ReactElement {
               <CatalogGrid
                 products={paginatedProducts}
                 loading={loading}
-                emptyMessage="No se encontraron productos para estos filtros."
+                emptyMessage={onlyOffers ? 'No hay productos en oferta por el momento' : 'No se encontraron productos para estos filtros.'}
                 onAdd={handleAdd}
                 onView={handleView}
                 viewMode="grid"
@@ -409,6 +429,7 @@ export default function Catalogo(): React.ReactElement {
           )}
         </div>
       </div>
+    </div>
 
       {filtersOpen && isMobile && (
         <div className="catalog-drawer" role="dialog" aria-modal="true" aria-label="Filtros de catalogo">
@@ -437,13 +458,13 @@ export default function Catalogo(): React.ReactElement {
               onSearchChange={setSearchTerm}
               categories={categories}
               selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              onCategoryChange={handleCategoryChange}
               tags={tags}
               selectedTags={selectedTags}
               onToggleTag={toggleTag}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
               onReset={handleReset}
+              offersOnly={onlyOffers}
+              onToggleOffers={() => setOnlyOffers((prev) => !prev)}
             />
           </div>
         </div>

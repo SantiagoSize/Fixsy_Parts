@@ -45,7 +45,7 @@ function AppRoutes(): React.ReactElement {
       <Route path="/catalog" element={<Navigate to="/catalogo" replace />} />
       <Route path="/cart" element={<CartView />} />
       <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
