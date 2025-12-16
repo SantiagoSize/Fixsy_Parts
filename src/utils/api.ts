@@ -1,4 +1,4 @@
-const DEFAULT_USERS_API = 'http://localhost:8081';
+const DEFAULT_USERS_API = 'http://localhost:8080';
 const DEFAULT_PRODUCTS_API = 'http://localhost:8083';
 const DEFAULT_ORDERS_API = 'http://localhost:8084';
 const DEFAULT_MESSAGES_API = 'http://localhost:8085';

@@ -72,6 +72,7 @@ function Checkout(): React.ReactElement | null {
     () => items.map((item) => ({
       productId: item.productId,
       productName: item.product.nombre,
+      productSku: item.product.sku || `PROD-${item.productId}`,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     })),
@@ -206,17 +207,22 @@ function Checkout(): React.ReactElement | null {
         method: 'POST',
         json: payload,
       });
-      addOrderToContext({
-        userEmail: order.userEmail,
-        items: order.items.map((it) => ({
-          productId: typeof it.productId === 'string' ? Number(it.productId) : it.productId,
-          name: it.productName,
-          quantity: it.quantity,
-          price: it.unitPrice,
-        })),
-      });
-      clearCart();
+      // Primero navegar con los datos de la orden
       navigate('/checkout/success', { state: order });
+      
+      // Luego limpiar el carrito y agregar al contexto (después de la navegación)
+      setTimeout(() => {
+        addOrderToContext({
+          userEmail: order.userEmail,
+          items: (order.items || []).map((it) => ({
+            productId: typeof it.productId === 'string' ? Number(it.productId) : it.productId,
+            name: it.productName,
+            quantity: it.quantity,
+            price: it.unitPrice,
+          })),
+        });
+        clearCart();
+      }, 100);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo crear la orden.';
       const fallbackOrder: OrderResponseDTO = {

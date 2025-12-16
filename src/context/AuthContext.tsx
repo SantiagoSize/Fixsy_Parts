@@ -1,13 +1,15 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { USERS_API_BASE } from '../utils/api';
 
 interface User {
   id: number;
   email: string;
-  nombres: string;
-  apellidos: string;
+  nombre: string;
+  apellido: string;
   telefono?: string;
   role: string; // "Admin" | "Soporte" | "Usuario"
+  profilePic?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading?: boolean;
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
+  setSessionUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<User> => {
-    const response = await axios.post('http://localhost:8080/api/auth/login', {
+    const response = await axios.post(`${USERS_API_BASE}/api/auth/login`, {
       email: email.toLowerCase().trim(),
       password
     });
@@ -51,8 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userData: User = {
       id: response.data.id,
       email: response.data.email,
-      nombres: response.data.nombres,
-      apellidos: response.data.apellidos,
+      nombre: response.data.nombres,
+      apellido: response.data.apellidos,
       telefono: response.data.telefono,
       role: response.data.role
     };
@@ -60,6 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
     localStorage.setItem('fixsy_user', JSON.stringify(userData));
     return userData;
+  };
+
+  const setSessionUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('fixsy_user', JSON.stringify(updatedUser));
   };
 
   const register = async (data: any) => {
@@ -72,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       telefono: data.telefono || data.phone
     };
 
-    const response = await axios.post('http://localhost:8080/api/auth/register', payload);
+    const response = await axios.post(`${USERS_API_BASE}/api/auth/register`, payload);
 
     if (!response.data.success) {
       throw new Error(response.data.message || 'Error al registrar');
@@ -81,8 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userData: User = {
       id: response.data.id,
       email: response.data.email,
-      nombres: response.data.nombres,
-      apellidos: response.data.apellidos,
+      nombre: response.data.nombres,
+      apellido: response.data.apellidos,
       role: response.data.role
     };
   };
@@ -115,7 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       isAuthenticated: !!user,
       isLoading,
-      authenticatedFetch
+      authenticatedFetch,
+      setSessionUser
     }}>
       {children}
     </AuthContext.Provider>
